@@ -1,10 +1,18 @@
 const { expect } = require("chai");
+const sinon = require("sinon");
+
 const { initialize } = require("../../src/server");
 const { generateKeyPair } = require("../helpers/keypair");
-const sinon = require("sinon");
+const { packDataForGroupCreation } = require("../helpers/packDataHelper");
+const { sign, createBlake2bhash } = require("../../src/utils");
 
 describe("Livecopy Group Factory", () => {
   let livecopyGroupFactory;
+  const groupId = "dummyGroupId",
+    livecopyAdminSecretKey =
+      "edskRqFp3Z9AqoKrMNFb9bnWNwEsRzbjqjBhzmFMLF9UqB6VBmw7F8ppTiXaAnHtysmi6xFxoHf6rMUz6Y1ipiDz2EgwZQv3pa",
+    livecopyAdminPublicKey =
+      "edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2";
 
   before(async () => {
     const res = await initialize();
@@ -17,9 +25,24 @@ describe("Livecopy Group Factory", () => {
 
   it("should create group instance", async () => {
     const {
-      address: adminAddress,
-      publicKey: adminPublicKey,
+      address: groupAdminAddress,
+      publicKey: groupAdminPublicKey,
     } = await generateKeyPair();
+
+    const minSignaturesReqd = 2;
+    const timestamp = Date.now();
+
+    // Create admin signature
+    const message = packDataForGroupCreation(
+      groupId,
+      groupAdminPublicKey,
+      minSignaturesReqd,
+      timestamp
+    );
+    const livecopyAdminSignature = await sign(
+      "0x" + createBlake2bhash(message, true),
+      livecopyAdminSecretKey
+    );
 
     // Stub the actual contract invocation
     // Instead matching the parameters should be sufficient
@@ -27,14 +50,48 @@ describe("Livecopy Group Factory", () => {
       livecopyGroupFactory.relayer,
       "sendContractInvocation"
     );
-    await livecopyGroupFactory.createGroup("dummyGroupId", adminPublicKey, 2);
+    await livecopyGroupFactory.createGroup(
+      groupId,
+      groupAdminPublicKey,
+      minSignaturesReqd,
+      timestamp,
+      livecopyAdminSignature
+    );
     const entrypointData = {
       entrypoint: "create",
       value: {
         prim: "Pair",
         args: [
-          { string: adminAddress },
-          { prim: "Pair", args: [{ string: "dummyGroupId" }, { int: "2" }] },
+          {
+            prim: "Pair",
+            args: [
+              {
+                string: livecopyAdminSignature,
+              },
+              {
+                prim: "Pair",
+                args: [
+                  { string: timestamp.toString() },
+                  { string: groupAdminAddress },
+                ],
+              },
+            ],
+          },
+          {
+            prim: "Pair",
+            args: [
+              {
+                string: groupAdminPublicKey,
+              },
+              {
+                prim: "Pair",
+                args: [
+                  { string: groupId },
+                  { int: minSignaturesReqd.toString() },
+                ],
+              },
+            ],
+          },
         ],
       },
     };
@@ -51,7 +108,7 @@ describe("Livecopy Group Factory", () => {
 
   it("should get a group instance address", async () => {
     const groupInstanceAddress = await livecopyGroupFactory.getGroupAddress(
-      "dummyGroupId"
+      groupId
     );
     expect(groupInstanceAddress).to.be.a("string");
   });

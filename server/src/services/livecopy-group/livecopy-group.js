@@ -22,13 +22,15 @@ class LiveCopyGroup {
   /**
    * Update an admin address for a group contract
    * @param {string} adminAddress
+   * @param {string} adminPublicKey
    *
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
-  async setAdmin(adminAddress) {
+  async setAdmin(adminAddress, adminPublicKey) {
     try {
       const setAdminMethod = this.groupContract.methods["setAdmin"](
-        adminAddress
+        adminAddress,
+        adminPublicKey
       );
       const transferParams = setAdminMethod.toTransferParams();
       const transactionHash = await this.relayer.sendContractInvocation(
@@ -39,13 +41,13 @@ class LiveCopyGroup {
         transactionHash,
       };
     } catch (error) {
-      logger.error(JSON.stringify(error));
+      logger.error(JSON.stringify(error.message));
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");
       }
 
       return {
-        error: error.name,
+        error: error.message,
       };
     }
   }
@@ -56,27 +58,33 @@ class LiveCopyGroup {
    *
    * @param {string} signerPublicKey
    * @param {string} signerAlias
-   * @param {string} adminPublicKey
    * @param {string} adminSignature
+   * @param {number} timestamp
    *
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
   async addWhitelistedAddress(
     signerPublicKey,
     signerAlias,
-    adminPublicKey,
-    adminSignature
+    adminSignature,
+    timestamp
   ) {
     try {
-      const adminAddress = TezosMessageUtils.computeKeyHash(adminPublicKey);
+      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+        signerPublicKey,
+        "edpk"
+      );
+      const signerAddress = TezosMessageUtils.computeKeyHash(
+        signerPublicKeyBuf
+      );
       const addWhitelistedAddressMethod = this.groupContract.methods[
         "insertWhitelistedAddress"
       ](
-        adminAddress,
         signerAlias,
-        signerPublicKey,
+        timestamp.toString(),
+        signerAddress,
         adminSignature,
-        adminAddress
+        signerPublicKey
       );
       const transferParams = addWhitelistedAddressMethod.toTransferParams();
       const transactionHash = await this.relayer.sendContractInvocation(
@@ -87,13 +95,13 @@ class LiveCopyGroup {
         transactionHash,
       };
     } catch (error) {
-      logger.error(JSON.stringify(error));
+      logger.error(JSON.stringify(error.message));
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");
       }
 
       return {
-        error: error.name,
+        error: error.message,
       };
     }
   }
@@ -106,6 +114,60 @@ class LiveCopyGroup {
   async getWhitelistedAddresses() {
     const storageList = await this.groupContract.storage();
     return storageList.whiteListedAddresses;
+  }
+
+  /**
+   * Issue an NFT Cert
+   *
+   * @param {number} tokenId
+   * @param {string} assetType
+   * @param {string} documentUrl
+   * @param {string} documentHash
+   * @param {string} issuedToAlias
+   * @param {string} signerAddress
+   * @param {string} signerPublicKey
+   * @param {string} signature
+   */
+  async issueCertificate(
+    tokenId,
+    assetType,
+    documentUrl,
+    documentHash,
+    issuedToAlias,
+    signerAddress,
+    signerPublicKey,
+    signature
+  ) {
+    try {
+      const issueCertificateMethod = this.groupContract.methods["issueCert"](
+        assetType,
+        documentHash,
+        signerPublicKey,
+        signature,
+        signerAddress,
+        state,
+        issuedToAlias,
+        documentUrl,
+        tokenId
+      );
+      const transferParams = issueCertificateMethod.toTransferParams();
+      const transactionHash = await this.relayer.sendContractInvocation(
+        transferParams
+      );
+      return {
+        error: null,
+        transactionHash,
+      };
+    } catch (error) {
+      logger.error(JSON.stringify(error.message));
+      if (error instanceof TezosOperationError) {
+        logger.error("Operation error");
+      }
+
+      return {
+        error: error.message,
+      };
+    }
   }
 }
 

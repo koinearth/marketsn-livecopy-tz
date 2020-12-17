@@ -7,8 +7,9 @@
   "license": "",
   "scripts": {
     "start": "node ./src/index.js",
-    "test": "npm run test:unit",
-    "test:unit": "mocha --recursive --timeout 40000 --exit test/**/*.js"
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "mocha --recursive --timeout 40000 --exit test/unit/**/*.js",
+    "test:integration": "mocha --recursive --timeout 120000 --exit test/integration/**/*.js"
   },
   "dependencies": {
     "@taquito/signer": "^7.0.0-beta.0",
@@ -24,7 +25,9 @@
     "log4js-extend": "^0.2.1",
     "loglevel": "^1.7.0",
     "mongoose": "^5.10.15",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^2.6.1",
+    "superagent": "^6.1.0",
+    "supertest": "^6.0.1"
   },
   "devDependencies": {
     "chai": "^4.2.0",

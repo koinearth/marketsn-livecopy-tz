@@ -45,10 +45,10 @@ async function initialize() {
 }
 
 /**
- * Creates an express HTTP server
- * Adds required middleware to express server
+ * Creates an express app
+ * Adds required middleware to app
  */
-async function createHttpServer() {
+async function createExpressApp() {
   const app = express();
   app.use(compression());
   app.use(helmet());
@@ -77,12 +77,10 @@ async function createHttpServer() {
 
   app.use("/livecopyadmin", livecopyGroupRoutes);
   app.use("/status", statusRoutes);
-
-  const server = http.createServer(app);
-  return server;
+  return app;
 }
 
 module.exports = {
-  createHttpServer,
+  createExpressApp,
   initialize,
 };

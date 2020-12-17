@@ -26,11 +26,18 @@ class LiveCopyGroupFactory {
    * @param {string} groupId
    * @param {string} adminPublicKey
    * @param {number} minSignaturesReqd
+   * @param {number} timeStamp
+   * @param {string} livecopyAdminSignature
    *
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
-  async createGroup(groupId, adminPublicKey, minSignaturesReqd) {
-    // TODO: This is missing authentication right now
+  async createGroup(
+    groupId,
+    adminPublicKey,
+    minSignaturesReqd,
+    timeStamp,
+    livecopyAdminSignature
+  ) {
     try {
       const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
         adminPublicKey,
@@ -38,7 +45,10 @@ class LiveCopyGroupFactory {
       );
       const adminAddress = TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
       const createMethod = this.groupFactoryContract.methods["create"](
+        livecopyAdminSignature,
+        timeStamp.toString(),
         adminAddress,
+        adminPublicKey,
         groupId,
         minSignaturesReqd
       );
@@ -51,13 +61,14 @@ class LiveCopyGroupFactory {
         transactionHash,
       };
     } catch (error) {
-      logger.error(JSON.stringify(error));
+      console.log(error);
+      logger.error(error.message);
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");
       }
 
       return {
-        error: error.name,
+        error: error.message,
       };
     }
   }
@@ -82,13 +93,13 @@ class LiveCopyGroupFactory {
         transactionHash,
       };
     } catch (error) {
-      logger.error(JSON.stringify(error));
+      logger.error(JSON.stringify(error.message));
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");
       }
 
       return {
-        error: error.name,
+        error: error.message,
       };
     }
   }

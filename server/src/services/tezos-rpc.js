@@ -191,16 +191,21 @@ class TezosRPC {
   /**
    * Get block data after a particular hash to latest
    * @param {string} lastSeenHash
+   * @param {number} lastSeenBlockLevel
    */
-  async getBlocksAfter(lastSeenHash) {
+  async getBlocksAfter(lastSeenHash, lastSeenBlockLevel) {
     const {
       level: latestBlockLevel,
       blockHash,
       operations,
       predecessor,
     } = await this.getLatestBlock();
+    if (latestBlockLevel <= lastSeenBlockLevel) {
+      return { error: "No blocks mined yet" };
+    }
+
     if (!lastSeenHash || predecessor === lastSeenHash) {
-      return { level: latestBlockLevel, blockHash, operations };
+      return { error: null, level: latestBlockLevel, blockHash, operations };
     }
 
     let totalOperations = operations;
@@ -219,6 +224,7 @@ class TezosRPC {
     }
 
     return {
+      error: null,
       level: latestBlockLevel,
       blockHash,
       operations: totalOperations,

@@ -99,9 +99,16 @@ class TransactionMonitor {
 
       // Get all the blocks after last known hash
       this.inProgress = true;
-      const { level, operations } = await this.tezosRpc.getBlocksAfter(
-        fromBlockHash
+      const { error, level, operations } = await this.tezosRpc.getBlocksAfter(
+        fromBlockHash,
+        fromBlockLevel
       );
+
+      if (error) {
+        return {
+          error,
+        };
+      }
 
       logger.info(
         `Fetched blocks from level: ${fromBlockLevel} to level: ${level}`

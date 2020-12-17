@@ -36,7 +36,7 @@ const NETWORK_CONFIG = {
       network: "delphinet",
     },
     contractAddresses: {
-      groupFactoryAddress: "KT1W2X6gg2usWQPjCt7KGvJbdj5UpGnQ5sHo",
+      groupFactoryAddress: "KT1FbRDTAkbv3HGEgLvzMLGgqPTp8D2fQh72",
     },
     networkId: "NetXm8tYqnMWky1",
   },

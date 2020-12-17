@@ -20,13 +20,14 @@ process.on("SIGINT", async (error) => {
 /**
  * Run HTTP server
  */
-const { createHttpServer } = require("./server");
+const { createExpressApp } = require("./server");
 
 async function run() {
   try {
     await mongo.connect();
 
-    const server = await createHttpServer();
+    const app = await createExpressApp();
+    const server = http.createServer(app);
     server.listen(config.PORT, async function () {
       logger.info("API server started on port", config.PORT);
     });

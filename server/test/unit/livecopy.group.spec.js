@@ -2,10 +2,13 @@ const { expect } = require("chai");
 const { initialize } = require("../../src/server");
 const { generateKeyPair } = require("../helpers/keypair");
 const sinon = require("sinon");
-const { sign } = require("../../src/utils");
+const { sign, createBlake2bhash } = require("../../src/utils");
+const {
+  packDataForWhitelistAddressUpdation,
+} = require("../helpers/packDataHelper");
 
 describe("Livecopy Group", () => {
-  let livecopyGroup, newAdmin, newAdminPublicKey, newAdminSecretKey;
+  let livecopyGroup, adminSecretKey;
 
   before(async () => {
     const res = await initialize();
@@ -16,6 +19,8 @@ describe("Livecopy Group", () => {
     if (livecopyGroupInstanceRes.error) throw livecopyGroupInstanceRes.error;
 
     livecopyGroup = livecopyGroupInstanceRes.livecopyGroup;
+    adminSecretKey =
+      "edskRqFp3Z9AqoKrMNFb9bnWNwEsRzbjqjBhzmFMLF9UqB6VBmw7F8ppTiXaAnHtysmi6xFxoHf6rMUz6Y1ipiDz2EgwZQv3pa";
   });
 
   afterEach(() => {
@@ -28,19 +33,23 @@ describe("Livecopy Group", () => {
   });
 
   it("should set admin address", async () => {
-    const { address, publicKey, secretKey } = await generateKeyPair();
-    newAdmin = address;
-    newAdminPublicKey = publicKey;
-    newAdminSecretKey = secretKey;
+    const {
+      address: newAdmin,
+      publicKey: newAdminPublicKey,
+      secretKey: newAdminSecretKey,
+    } = await generateKeyPair();
 
     const invokeContractStub = sinon.stub(
       livecopyGroup.relayer,
       "sendContractInvocation"
     );
-    await livecopyGroup.setAdmin(newAdmin);
+    await livecopyGroup.setAdmin(newAdmin, newAdminPublicKey);
     const entrypointData = {
       entrypoint: "setAdmin",
-      value: { string: newAdmin },
+      value: {
+        args: [{ string: newAdmin }, { string: newAdminPublicKey }],
+        prim: "Pair",
+      },
     };
     sinon.assert.calledWith(
       invokeContractStub,
@@ -49,11 +58,25 @@ describe("Livecopy Group", () => {
   });
 
   it("should add signer address", async () => {
-    const { publicKey: signerPublicKey } = await generateKeyPair();
-    const signerAlias = "signerAlias";
+    const {
+      publicKey: signerPublicKey,
+      address: signerAddress,
+    } = await generateKeyPair();
+    const signerAlias = "alice";
+    const timestamp = 0;
 
-    // TODO: This needs to be fixed in smart contract
-    const signature = await sign("I am the signer", newAdminSecretKey);
+    // Create admin signature
+    const message = packDataForWhitelistAddressUpdation(
+      signerAddress,
+      signerPublicKey,
+      signerAlias,
+      timestamp
+    );
+    const adminSignature = await sign(
+      "0x" + createBlake2bhash(message, true),
+      adminSecretKey
+    );
+
     const invokeContractStub = sinon.stub(
       livecopyGroup.relayer,
       "sendContractInvocation"
@@ -61,8 +84,8 @@ describe("Livecopy Group", () => {
     await livecopyGroup.addWhitelistedAddress(
       signerPublicKey,
       signerAlias,
-      newAdminPublicKey,
-      signature
+      adminSignature,
+      timestamp
     );
     const entrypointData = {
       entrypoint: "insertWhitelistedAddress",
@@ -71,21 +94,21 @@ describe("Livecopy Group", () => {
         args: [
           {
             prim: "Pair",
-            args: [{ string: newAdmin }, { string: signerAlias }],
+            args: [{ string: signerAlias }, { string: timestamp.toString() }],
           },
           {
             prim: "Pair",
             args: [
-              {
-                string: signerPublicKey,
-              },
+              { string: signerAddress },
               {
                 prim: "Pair",
                 args: [
                   {
-                    string: signature,
+                    string: adminSignature,
                   },
-                  { string: newAdmin },
+                  {
+                    string: signerPublicKey,
+                  },
                 ],
               },
             ],

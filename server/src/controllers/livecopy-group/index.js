@@ -8,11 +8,16 @@ const {
 } = require("../helper");
 
 // Create a group from factory contract
-// TODO: Add `livecopy admin` signature validation
 const createGroup = async function (req, res) {
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    const { AdminPublicKey, Policy, GroupId } = req.body;
+    const {
+      AdminPublicKey,
+      Policy,
+      GroupId,
+      Timestamp,
+      LivecopyAdminSignature,
+    } = req.body;
     // AdminPublicKey validations
     if (!AdminPublicKey) {
       return sendBadRequestErrMessage(
@@ -49,10 +54,40 @@ const createGroup = async function (req, res) {
       return sendBadRequestErrMessage(res, "GroupId should be a valid string");
     }
 
+    // Timestamp Validations
+    if (!Timestamp) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter Timestamp in request"
+      );
+    }
+    if (typeof Timestamp !== "number") {
+      return sendBadRequestErrMessage(
+        res,
+        "Timestamp should be a valid number"
+      );
+    }
+
+    // AdminSignature Validations
+    if (!LivecopyAdminSignature) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter LivecopyAdminSignature in request"
+      );
+    }
+    if (typeof GroupId !== "string") {
+      return sendBadRequestErrMessage(
+        res,
+        "LivecopyAdminSignature should be a valid string"
+      );
+    }
+
     const { error, transactionHash } = await livecopyGroupFactory.createGroup(
       GroupId,
       AdminPublicKey,
-      Policy
+      Policy,
+      Timestamp,
+      LivecopyAdminSignature
     );
     if (error) {
       logger.error(error);
@@ -125,6 +160,7 @@ const addSignerToGroup = async function (req, res) {
       SignerName,
       AdminSignature,
       AdminPublicKey,
+      Timestamp,
     } = req.body;
     // GroupId validations
     if (!GroupId) {
@@ -193,6 +229,20 @@ const addSignerToGroup = async function (req, res) {
       );
     }
 
+    // Timestamp Validations
+    if (!Timestamp) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter Timestamp in request"
+      );
+    }
+    if (typeof Timestamp !== "number") {
+      return sendBadRequestErrMessage(
+        res,
+        "Timestamp should be a valid number"
+      );
+    }
+
     const groupInstanceRes = await livecopyGroupFactory.getGroupInstance(
       GroupId
     );
@@ -212,8 +262,8 @@ const addSignerToGroup = async function (req, res) {
     } = await livecopyGroup.addWhitelistedAddress(
       SignerAccount,
       SignerName,
-      AdminPublicKey,
-      AdminSignature
+      AdminSignature,
+      Timestamp
     );
     if (error) {
       logger.error(error);

@@ -17,6 +17,15 @@ const transactionStatus = async function (req, res) {
       { transactionHash },
       { status: 1 }
     );
+    if (!txnRecord) {
+      return res.status(420).send({
+        status: "error",
+        code: 420,
+        message: "failed to query the transaction status",
+        data: "",
+      });
+    }
+
     return res.status(200).send({
       status: "success",
       code: "200",

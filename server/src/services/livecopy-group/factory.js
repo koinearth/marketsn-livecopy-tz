@@ -6,6 +6,7 @@ const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
 const { logger } = require("../../logger");
+const { sendEmail } = require("./mailer");
 const { LiveCopyGroup } = require("./livecopy-group");
 
 class LiveCopyGroupFactory {
@@ -18,6 +19,52 @@ class LiveCopyGroupFactory {
     this.groupFactoryContract = groupFactoryContract;
     this.relayer = relayer;
     this.tezosRpc = tezosRpc;
+  }
+
+  /**
+   * Request a group creation from oracle factory
+   *
+   * @param {string} groupId
+   * @param {string} adminPublicKey
+   * @param {number} minSignaturesReqd
+   *
+   * @returns {Promise<{error: Error}>}
+   */
+  async requestGroupCreation(groupId, adminPublicKey, minSignaturesReqd) {
+    try {
+      const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+        adminPublicKey,
+        "edpk"
+      );
+      TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
+      const groupAddress = await this.getGroupAddress(groupId);
+      if (groupAddress) {
+        return {
+          error: "groupId already exists",
+        };
+      }
+
+      if (minSignaturesReqd <= 0) {
+        return {
+          error: "minimum signatures should be atleast 1",
+        };
+      }
+
+      await sendEmail(groupId, adminPublicKey, minSignaturesReqd);
+
+      return {
+        error: null,
+      };
+    } catch (error) {
+      logger.error(error.message);
+      if (error instanceof TezosOperationError) {
+        logger.error("Operation error");
+      }
+
+      return {
+        error: error.message,
+      };
+    }
   }
 
   /**
@@ -61,7 +108,6 @@ class LiveCopyGroupFactory {
         transactionHash,
       };
     } catch (error) {
-      console.log(error);
       logger.error(error.message);
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");
@@ -107,7 +153,7 @@ class LiveCopyGroupFactory {
   /**
    * Return a list of all livecopy group addresses created from factory
    *
-   * @returns {{[key: string]: string}[]} Array of livecopygroup addresses
+   * @returns {Promise<{[key: string]: string}[]>} Array of livecopygroup addresses
    */
   async listAllGroups() {
     const groupAddresses = await this.tezosRpc.readBigMap(
@@ -130,7 +176,7 @@ class LiveCopyGroupFactory {
    * Returns a group address from a groupId
    * @param {string} groupId
    *
-   * @returns {string}
+   * @returns {Promise<string>}
    */
   async getGroupAddress(groupId) {
     const storageList = await this.groupFactoryContract.storage();

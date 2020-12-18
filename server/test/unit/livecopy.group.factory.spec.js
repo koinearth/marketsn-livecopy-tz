@@ -40,7 +40,7 @@ describe("Livecopy Group Factory", () => {
       timestamp
     );
     const livecopyAdminSignature = await sign(
-      "0x" + createBlake2bhash(message, true),
+      createBlake2bhash(message),
       livecopyAdminSecretKey
     );
 

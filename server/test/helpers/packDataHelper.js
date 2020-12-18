@@ -44,5 +44,13 @@ function packDataForWhitelistAddressUpdation(
   return message;
 }
 
+function packString(message) {
+  return TezosMessageUtils.writePackedData(
+    Buffer.from(message, "hex"),
+    "bytes"
+  );
+}
+
 exports.packDataForGroupCreation = packDataForGroupCreation;
 exports.packDataForWhitelistAddressUpdation = packDataForWhitelistAddressUpdation;
+exports.packString = packString;

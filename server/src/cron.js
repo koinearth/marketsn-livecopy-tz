@@ -8,7 +8,7 @@ const { TransactionMonitor } = require("./services/relayer/transactionMonitor");
  */
 function startTransactionMonitor(txnMonitor) {
   new Cron.CronJob(
-    "*/30 * * * * *",
+    "*/15 * * * * *",
     txnMonitor.start.bind(txnMonitor),
     null,
     true,

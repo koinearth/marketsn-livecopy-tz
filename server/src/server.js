@@ -1,12 +1,12 @@
 const express = require("express");
 const helmet = require("helmet");
-const http = require("http");
 const compression = require("compression");
 
 const { config } = require("./config");
 const { logger } = require("./logger");
 const livecopyGroupRoutes = require("./routes/livecopy-group");
 const statusRoutes = require("./routes/status");
+const livecopyCertRoutes = require("./routes/livecopy-nft");
 
 /**
  * Services initialization and
@@ -77,6 +77,7 @@ async function createExpressApp() {
 
   app.use("/livecopyadmin", livecopyGroupRoutes);
   app.use("/status", statusRoutes);
+  app.use("/livecopycert", livecopyCertRoutes);
   return app;
 }
 

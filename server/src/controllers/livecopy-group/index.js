@@ -7,6 +7,73 @@ const {
   sendBadRequestErrMessage,
 } = require("../helper");
 
+// Request group creation from factory contract
+const requestGroup = async function (req, res) {
+  try {
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    const { AdminPublicKey, Policy, GroupId } = req.body;
+    // AdminPublicKey validations
+    if (!AdminPublicKey) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter AdminPublicKey in request"
+      );
+    }
+    if (typeof AdminPublicKey !== "string") {
+      return sendBadRequestErrMessage(
+        res,
+        "AdminPublicKey should be a valid string"
+      );
+    }
+
+    // Policy validations
+    if (!Policy) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter Policy in request"
+      );
+    }
+    if (typeof Policy !== "number") {
+      return sendBadRequestErrMessage(res, "Policy should be a valid number");
+    }
+
+    // GroupId validations
+    if (!GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter GroupId in request"
+      );
+    }
+    if (typeof GroupId !== "string") {
+      return sendBadRequestErrMessage(res, "GroupId should be a valid string");
+    }
+
+    const { error } = await livecopyGroupFactory.requestGroupCreation(
+      GroupId,
+      AdminPublicKey,
+      Policy
+    );
+    if (error) {
+      logger.error(error);
+      return res.status(420).send({
+        status: "error",
+        code: 420,
+        message: "failed to submit group creation request",
+        data: "",
+      });
+    }
+
+    return res.status(200).send({
+      status: "success",
+      code: "200",
+      message: "Successfully submitted request for group creation",
+      data: "",
+    });
+  } catch (err) {
+    return handleError(err, res);
+  }
+};
+
 // Create a group from factory contract
 const createGroup = async function (req, res) {
   try {
@@ -150,7 +217,6 @@ const listAllGroups = async function (req, res) {
 };
 
 // Add whitelisted account to the group instance contract
-// TODO: Add signature validation
 const addSignerToGroup = async function (req, res) {
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
@@ -270,7 +336,7 @@ const addSignerToGroup = async function (req, res) {
       return res.status(420).send(FAILED_TXN_RESPONSE);
     }
 
-    logger.info("Group instance creation txn hash:", transactionHash);
+    logger.info("Add whitelistist acct. txn hash:", transactionHash);
     return res.status(200).send({
       status: "success",
       code: "200",
@@ -312,6 +378,7 @@ const listWhitelistedAddresses = async function (req, res) {
   }
 };
 
+exports.requestGroup = requestGroup;
 exports.createGroup = createGroup;
 exports.getGroupAddress = getGroupAddress;
 exports.listAllGroups = listAllGroups;

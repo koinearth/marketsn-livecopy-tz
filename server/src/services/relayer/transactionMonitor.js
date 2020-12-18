@@ -105,6 +105,7 @@ class TransactionMonitor {
       );
 
       if (error) {
+        this.inProgress = false;
         return {
           error,
         };

@@ -36,7 +36,7 @@ const NETWORK_CONFIG = {
       network: "delphinet",
     },
     contractAddresses: {
-      groupFactoryAddress: "KT1FbRDTAkbv3HGEgLvzMLGgqPTp8D2fQh72",
+      groupFactoryAddress: "KT18kr5MY1tKpvU3H7dS5PSFknJb8LJtR6AS",
     },
     networkId: "NetXm8tYqnMWky1",
   },
@@ -64,6 +64,13 @@ const config = {
   FEE_PRIORITY: process.env.FEE_PRIORITY || "high",
 
   DB_CONFIG,
+
+  // Used for notifying livecopy grp creation requests
+  supportEmailId: process.env.SUPPORT_EMAIL_ID,
+  supportEmailPassword: process.env.SUPPORT_EMAIL_PASSWORD,
+
+  // Admin emails will receive the nofication on livecopy grp creation requests
+  adminEmails: process.env.ADMIN_EMAILS.split(" "),
 };
 
 module.exports = { config };

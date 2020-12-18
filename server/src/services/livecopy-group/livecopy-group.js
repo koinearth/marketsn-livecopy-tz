@@ -134,11 +134,18 @@ class LiveCopyGroup {
     documentUrl,
     documentHash,
     issuedToAlias,
-    signerAddress,
+    state,
     signerPublicKey,
     signature
   ) {
     try {
+      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+        signerPublicKey,
+        "edpk"
+      );
+      const signerAddress = TezosMessageUtils.computeKeyHash(
+        signerPublicKeyBuf
+      );
       const issueCertificateMethod = this.groupContract.methods["issueCert"](
         assetType,
         documentHash,
@@ -159,6 +166,7 @@ class LiveCopyGroup {
         transactionHash,
       };
     } catch (error) {
+      console.log(error);
       logger.error(JSON.stringify(error.message));
       if (error instanceof TezosOperationError) {
         logger.error("Operation error");

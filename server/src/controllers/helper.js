@@ -11,7 +11,7 @@ const FAILED_TXN_RESPONSE = {
 // Generic error handler for HTTP requests
 function handleError(err, res) {
   if (err.reason === undefined) {
-    console.log(err)
+    console.log(err);
     logger.error(JSON.stringify(err));
     let responseText = {
       status: "error",

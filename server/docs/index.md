@@ -11,6 +11,7 @@ LiveCopy Server APIs
 
 # Private APIs
 
+- `POST` Request group creation
 - `POST` Create group
 - `PUT` Add signers to group
 - `DELETE` Delete signers from a group
@@ -20,6 +21,7 @@ LiveCopy Server APIs
 
 - [LiveCopy - Group related APIs](#livecopy---group-related-apis)
 
+  - [Request group creation](#0-request-group-creation)
   - [Create Group](#1-create-group)
   - [Add Signer to Group](#2-add-signer-to-group)
   - [Delete Signer from Group](#3-delete-signer-from-group)
@@ -42,16 +44,16 @@ LiveCopy Server APIs
 
 APIs related to group creation, add/remove signers to the group
 
-### 1. Create Group
+### 0. Request group creation
 
-Creates a Group using the `LiveCopyAdmin` public key
+Submit a request for group creation to `livecopyadmin`
 
 **_Endpoint:_**
 
 ```bash
 Method: POST
 Type: RAW
-URL: http://127.0.0.1/livecopyadmin/group
+URL: http://127.0.0.1/livecopyadmin/group/request
 ```
 
 **_Body:_**
@@ -84,6 +86,86 @@ URL: http://127.0.0.1/livecopyadmin/group
 {
     "status": "success",
     "code": "200",
+    "message": "Successfully submitted the request for group creation",
+    "data": ""
+}
+```
+
+**_Status Code:_** 200
+
+<br>
+
+##### II. Example Request: Create Group - 400 Bad Request
+
+**_Body:_**
+
+```js
+{
+    "Policy": 2,
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+}
+```
+
+##### II. Example Response: Create Group - 400 Bad Request
+
+```js
+{
+    "status": "error",
+    "code": 400,
+    "message": "Missing parameter GroupId"
+}
+```
+
+**_Status Code:_** 400
+
+<br>
+
+### 1. Create Group
+
+Creates a Group using the `LiveCopyAdmin` public key
+
+**_Endpoint:_**
+
+```bash
+Method: POST
+Type: RAW
+URL: http://127.0.0.1/livecopyadmin/group
+```
+
+**_Body:_**
+
+```js
+{
+    "GroupId": "lackadaisical-degree-twist-ewgt5",
+    "Policy": 2,
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "LivecopyAdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
+    "Timestamp": 1546475
+}
+```
+
+**_More example Requests/Responses:_**
+
+##### I. Example Request: Create Group - 200 OK
+
+**_Body:_**
+
+```js
+{
+    "GroupId": "lackadaisical-degree-twist-ewgt5",
+    "Policy": 2,
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "LivecopyAdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
+    "Timestamp": 1546475
+}
+```
+
+##### I. Example Response: Create Group - 200 OK
+
+```js
+{
+    "status": "success",
+    "code": "200",
     "message": "Successfully submitted the transaction",
     "data": {
         "transactionHash": "oo2wgxHKESVJSdxYPQArgE9EK2crtpj47BYj3RoNBrGsxc1Rpfm"
@@ -101,9 +183,10 @@ URL: http://127.0.0.1/livecopyadmin/group
 
 ```js
 {
-    "GroupId": "lackadaisical-degree-twist-ewgt5",
     "Policy": 2,
-    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "LivecopyAdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
+    "Timestamp": 1546475
 }
 ```
 
@@ -141,7 +224,8 @@ URL: http://127.0.0.1/livecopyadmin/group/signer
     "SignerAccount": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
     "SignerName": "DEOW1",
     "AdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
-    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "Timestamp": 126565
 }
 ```
 
@@ -157,7 +241,8 @@ URL: http://127.0.0.1/livecopyadmin/group/signer
     "SignerAccount": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
     "SignerName": "DEOW1",
     "AdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
-    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "Timestamp": 126565
 }
 ```
 
@@ -200,7 +285,8 @@ URL: http://127.0.0.1/livecopyadmin/group/signer
     "SignerAccount": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
     "SignerName": "DEOW1",
     "AdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
-    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "Timestamp": 126565
 }
 ```
 
@@ -216,7 +302,8 @@ URL: http://127.0.0.1/livecopyadmin/group/signer
     "SignerAccount": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
     "SignerName": "DEOW1",
     "AdminSignature": "edsigu4u1bDwyxw7SvCXRLNhR2getKrqrHCg5uyod6JkCbUMnkdnDRHajQhVHKbSKE2h2Y8VXBnd8hBCQdHBjwi832NrwwKL6Sg",
-    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK"
+    "AdminPublicKey": "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK",
+    "Timestamp": 126565
 }
 ```
 

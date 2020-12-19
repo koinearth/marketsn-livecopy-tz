@@ -56,7 +56,7 @@ class TezosRPC {
   }
 
   /**
-   * Deploy a contract = require() a code
+   * Deploy a contract from code
    * @param {string} code - Micheline/Michelson code
    * @param {string} initData - Constructor data in encoded form
    * @param {string} balance - XTZ to be sent to the contract, if any
@@ -160,7 +160,7 @@ class TezosRPC {
   }
 
   /**
-   * Get the details of latest block
+   * Get the details of a block from hash
    * @param {string} hash
    * @returns {Promise<{level: number, blockHash: string, operations: {hash: string, status: string}[]}>}
    */
@@ -252,6 +252,7 @@ class TezosRPC {
   }
 
   /**
+   * Send a contract invocation txn from a secretKey
    *
    * @param {string} secretKey
    * @param {TransferParams} transferParams

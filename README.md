@@ -30,10 +30,16 @@
     docker-compose build
 
     # Start command
-    docker-compose up --abort-on-container-exit -d
+    docker-compose up -d
 
     # Stop command
     docker-compose down
+```
+
+Integration tests can be run using:
+
+```sh
+  npm run test:integration
 ```
 
 ## Documentation

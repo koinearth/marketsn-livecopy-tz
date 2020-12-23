@@ -166,7 +166,7 @@ class LiveCopyGroupFactory {
       value = value.replace(/\"/g, "").replace(/\n/, "");
       formatedArray.push({
         id: key,
-        address: value,
+        address: TezosMessageUtils.readAddress(value.split("0x")[1]),
       });
     }
     return formatedArray;

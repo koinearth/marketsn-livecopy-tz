@@ -176,6 +176,7 @@ describe("Livecopy integration test", () => {
     expect(res).to.have.property("body");
     expect(res.body).to.have.property("data");
     expect(res.body.data).to.be.an("array");
+    expect(res.body.data).to.include(signerPublicKey);
   });
 
   it("should get all group instances created from factory with status 200", async function () {

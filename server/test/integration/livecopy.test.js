@@ -34,6 +34,7 @@ describe("Livecopy integration test", () => {
     tokenRecepientPublicKey,
     tokenRecepientSecretKey,
     tokenRecepientAlias = crypto.randomBytes(10).toString("hex");
+  let groupInstanceAddress;
 
   before(async () => {
     const app = await createExpressApp();
@@ -128,6 +129,8 @@ describe("Livecopy integration test", () => {
     expect(res).to.have.property("body");
     expect(res.body).to.have.property("data");
     expect(res.body.data).to.be.a("string");
+
+    groupInstanceAddress = res.body.data;
   });
 
   it("should add signer to the group with status 200", async function () {
@@ -260,6 +263,43 @@ describe("Livecopy integration test", () => {
     expect(res.body.data.transactionHash).to.be.a("string");
 
     await waitForRequestToBeProcessed(testSuite, res.body.data.transactionHash);
+  });
+
+  it("should get nft details with status 200", async function () {
+    const res = await testSuite
+      .get(`/livecopycert/?TokenId=${tokenId}`)
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(res).to.have.property("body");
+    expect(res.body).to.have.property("data");
+    const {
+      ownerOrgId,
+      ownerAddr,
+      oracleContract,
+      groupId,
+      assetType,
+      state,
+      hash,
+      url,
+      issueDateTime,
+      signerPublicKeys,
+      signatures,
+    } = res.body.data;
+    expect(ownerOrgId).to.be.equals(groupId);
+    expect(ownerAddr).to.be.equals(tokenRecepientAddress);
+    expect(oracleContract).to.be.equals(groupInstanceAddress);
+    expect(groupId).to.be.equals(groupId);
+    expect(assetType).to.be.equals("invoice");
+    expect(state).to.be.equals("CREATED");
+    expect(hash).to.be.a("string");
+    expect(url).to.be.a("string");
+    expect(signerPublicKeys).to.be.an("array");
+    expect(signatures).to.be.an("array");
+
+    const issueDate = new Date(issueDateTime);
+    expect(issueDate instanceof Date).to.be.true;
   });
 });
 

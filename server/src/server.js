@@ -15,6 +15,7 @@ const livecopyCertRoutes = require("./routes/livecopy-nft");
 const { TezosRPC } = require("./services/tezos-rpc");
 const { initializeRelayers } = require("./services/relayer");
 const { initializeLiveCopyGroupFactory } = require("./services/livecopy-group");
+const { initializeLiveCopyNft } = require("./services/livecopy-nft");
 const { TransactionMonitor } = require("./services/relayer/transactionMonitor");
 const { startTransactionMonitor } = require("./cron");
 
@@ -36,11 +37,18 @@ async function initialize() {
     relayer
   );
 
+  const livecopyNft = await initializeLiveCopyNft(
+    rpc,
+    config.contractAddresses.nftAddress,
+    relayer
+  );
+
   const transactionMonitor = new TransactionMonitor(rpc, config.conseilServer);
   startTransactionMonitor(transactionMonitor);
 
   return {
     livecopyGroupFactory,
+    livecopyNft,
   };
 }
 
@@ -71,9 +79,10 @@ async function createExpressApp() {
   });
 
   // Initialize services
-  const { livecopyGroupFactory } = await initialize();
+  const { livecopyGroupFactory, livecopyNft } = await initialize();
   // Set `livecopyGroupFactory` instance to be available in the controllers
   app.set("livecopyGroupFactory", livecopyGroupFactory);
+  app.set("livecopyNft", livecopyNft);
 
   app.use("/livecopyadmin", livecopyGroupRoutes);
   app.use("/status", statusRoutes);

@@ -1,6 +1,8 @@
 const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosRPC } = require("../tezos-rpc");
 const { logger } = require("../../logger");
+const { TezosMessageUtils } = require("conseiljs");
+const { hex2buf } = require("../../utils");
 
 class LiveCopyNft {
   /**
@@ -13,15 +15,54 @@ class LiveCopyNft {
   }
 
   /**
-   * Returns token data from a groupId
-   * @param {string} groupId
+   * Returns token data from a tokenId
+   * @param {string} tokenId
    *
-   * @returns {string}
+   * @returns {object}
    */
-  async getTokenData(groupId) {
-    const storageList = await this.nftContract.storage();
-    const { OracleList } = storageList;
-    return OracleList.get(groupId);
+  async getTokenData(tokenId) {
+    const { tokenData } = await this.nftContract.storage();
+    let {
+      _hash,
+      assetType,
+      authorities,
+      groupId,
+      issueDateTime,
+      oracleContract,
+      signatures_hashed,
+      state,
+      to,
+      toAlias,
+      url,
+    } = await tokenData.get(tokenId);
+
+    // Convert from bytes to respective formats
+    _hash = "0x" + TezosMessageUtils.readPackedData(_hash, "bytes");
+    authorities = authorities.map((authority) =>
+      TezosMessageUtils.readPublicKey(
+        TezosMessageUtils.readPackedData(authority, "bytes")
+      )
+    );
+    signatures_hashed = signatures_hashed.map((signatureBytes) =>
+      TezosMessageUtils.readSignatureWithHint(
+        hex2buf(TezosMessageUtils.readPackedData(signatureBytes, "bytes")),
+        "edsig"
+      )
+    );
+
+    return {
+      ownerOrgId: groupId,
+      ownerAddr: to,
+      oracleContract,
+      groupId,
+      assetType,
+      state,
+      hash: _hash,
+      url,
+      issueDateTime,
+      signerPublicKeys: authorities,
+      signatures: signatures_hashed,
+    };
   }
 }
 

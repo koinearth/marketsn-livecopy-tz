@@ -169,4 +169,29 @@ const issueCert = async function (req, res) {
   }
 };
 
+// Get details of nft from smart contract
+const getCert = async function (req, res) {
+  try {
+    const { TokenId } = req.query;
+    if (!TokenId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter TokenId in request"
+      );
+    }
+
+    const livecopyNft = req.app.get("livecopyNft");
+    const tokenDetails = await livecopyNft.getTokenData(TokenId);
+    return res.status(200).send({
+      status: "success",
+      code: "200",
+      message: "Successfully queried the smart contract",
+      data: tokenDetails,
+    });
+  } catch (err) {
+    return handleError(err, res);
+  }
+};
+
 exports.issueCert = issueCert;
+exports.getCert = getCert;

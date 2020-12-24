@@ -24,6 +24,7 @@ const NETWORK_CONFIG = {
     },
     contractAddresses: {
       groupFactoryAddress: "",
+      nftAddress: "",
     },
     networkId: "NetXdQprcVkpaWU",
   },
@@ -37,6 +38,7 @@ const NETWORK_CONFIG = {
     },
     contractAddresses: {
       groupFactoryAddress: "KT18kr5MY1tKpvU3H7dS5PSFknJb8LJtR6AS",
+      nftAddress: "KT1UAQJ6XauawJvZdCvW6XvGnkraPZh3kjWa",
     },
     networkId: "NetXm8tYqnMWky1",
   },

@@ -1,6 +1,5 @@
 const { SoftSigner, KeyStoreUtils } = require("conseiljs-softsigner");
 const { TezosMessageUtils } = require("conseiljs");
-const { InMemorySigner } = require("@taquito/signer");
 
 /**
  * Given a string message, hash the message and
@@ -21,9 +20,23 @@ async function verifySignature(signature, message, publicKey) {
  * @param {string} secretKey - Secret Key to be used for signing
  */
 async function sign(message, secretKey) {
-  const signeer = new InMemorySigner(secretKey);
-  const sig = await signeer.sign(message);
-  return sig.prefixSig;
+  const unlockSecretKeyForever = -1;
+  // const unlockSecretKeyFor60secs = 60;
+
+  const secretKeyBuf = TezosMessageUtils.writeKeyWithHint(secretKey, "edsk");
+
+  const signer = await SoftSigner.createSigner(
+    secretKeyBuf,
+    unlockSecretKeyForever
+  );
+
+  const isHex = isHexString(message);
+  if (isHex) {
+    const messageSig = await signer.signOperation(hex2buf(message));
+    return TezosMessageUtils.readSignatureWithHint(messageSig, "edsig");
+  }
+
+  return signer.signText(message);
 }
 
 /**
@@ -75,8 +88,8 @@ const hex2buf = (hex) => {
     hex = hex.split("0x")[1];
   }
   const arr = [];
-  for (let i = 0; i < hex.length; i++) {
-    arr.push(parseInt(hex[i], 16));
+  for (let i = 0; i < hex.length; i += 2) {
+    arr.push(parseInt(hex.slice(i, i + 2), 16));
   }
   return new Uint8Array(arr);
 };
@@ -86,4 +99,5 @@ module.exports = {
   sign,
   createBlake2bhash,
   getAccountInfo,
+  hex2buf,
 };

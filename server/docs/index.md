@@ -549,21 +549,23 @@ URL: http://127.0.0.1/livecopycert/
 ```js
 {
     "status": "success",
-    "code": 200,
-    "message": "Successfully queried smart contract",
+    "code": "200",
+    "message": "Successfully queried the smart contract",
     "data": {
-    "ownerAddr": "<Token Owner Addr>",
-    "ownerOrgId": "<Token Owner Org>",
-    "ownerOrgName": "<Token Owner Org Name from DB>",
-    "oracleContract": "<Oracle Contract Addr.>",
-    "groupId": "<ID of group>",
-    "assetType": "<Asset Type>",
-    "state": "<State of NFT>",
-    "hash": "<NFT hash>",
-    "url": "<URL displaying the protected PDF>",
-    "issueDateTime": "<Token Issue Date>",
-        "signatures":  [
-            "edsigtpYXAdS4N2ZpdA9FPVukM6gEmoa4VtCJXKEWyanR5vaf6EQFfDgLJtXxZU69qpDqZdrtCAQrZdHLJj33eN3WkGGegYZWdX
+        "ownerOrgId": "a0580b3ef10fb19aed20",
+        "ownerAddr": "tz1ZjRw4kN84oVvHZ31mTiTvCNR1JCXzKPbK",
+        "oracleContract": "KT1EuiwmKRnBQhWBPgb7c42K9vpSeQbMYGzD",
+        "groupId": "a0580b3ef10fb19aed20",
+        "assetType": "invoice",
+        "state": "CREATED",
+        "hash": "0x3b533dfcc9944a2d3b8b641bc6c8cd04365cac556d476fe2e8854ea521120de6",
+        "url": "http://marketsn.com/asset/IOC",
+        "issueDateTime": "2020-12-23T12:54:23.000Z",
+        "signerPublicKeys": [
+            "edpkvVm7sz3JKF3jctTFnRr4U36MMsHvGyUSRmu1TcbaiN5joh9KUW"
+        ],
+        "signatures": [
+            "edsigtu1CUAyXBatKYrJD9tcPBjMVmkZ3YYjfKZ7QuYunEF68yqVf9L9eM1KvwzSSh2r1JsLPUNuwJbkjc1VfKfL3XTMZSk4kd3"
         ]
     }
 }

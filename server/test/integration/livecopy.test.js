@@ -278,7 +278,7 @@ describe("Livecopy integration test", () => {
       ownerOrgId,
       ownerAddr,
       oracleContract,
-      groupId,
+      groupId: groupIdFromApi,
       assetType,
       state,
       hash,
@@ -290,7 +290,7 @@ describe("Livecopy integration test", () => {
     expect(ownerOrgId).to.be.equals(groupId);
     expect(ownerAddr).to.be.equals(tokenRecepientAddress);
     expect(oracleContract).to.be.equals(groupInstanceAddress);
-    expect(groupId).to.be.equals(groupId);
+    expect(groupIdFromApi).to.be.equals(groupId);
     expect(assetType).to.be.equals("invoice");
     expect(state).to.be.equals("CREATED");
     expect(hash).to.be.a("string");

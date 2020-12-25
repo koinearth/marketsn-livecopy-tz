@@ -1,0 +1,31 @@
+version: "3"
+
+services:
+  marketsn-tz:
+    build: .
+    container_name: marketsn-tz
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      DB_HOST: "mongo-marketsn"
+      DB_PORT: 27017
+    volumes:
+      - ./logs:/server/logs
+    depends_on:
+      - mongo
+
+  mongo:
+    image: "mongo:latest"
+    container_name: mongo-marketsn
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_USER_NAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_USER_PASSWORD}
+      MONGO_INITDB_DATABASE: ${DB_NAME}
+    volumes:
+      - .docker/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh
+      - ./mongo-db-dir:/data/db

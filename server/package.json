@@ -1,0 +1,41 @@
+{
+  "name": "livecopy-api-server",
+  "version": "1.0.0",
+  "description": "Tezos API Server for Marketsn",
+  "keywords": [],
+  "author": "",
+  "license": "",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "mocha --recursive --timeout 40000 --exit test/unit/**/*.js",
+    "test:integration": "mocha --recursive --timeout 150000 --exit test/integration/**/*.js"
+  },
+  "dependencies": {
+    "@taquito/signer": "^7.0.0-beta.0",
+    "@taquito/taquito": "^7.0.0-beta.0",
+    "compression": "^1.7.4",
+    "conseiljs": "^5.0.5",
+    "conseiljs-softsigner": "^5.0.3",
+    "cron": "^1.8.2",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "helmet": "^4.2.0",
+    "log4js": "^6.3.0",
+    "log4js-extend": "^0.2.1",
+    "loglevel": "^1.7.0",
+    "mongoose": "^5.10.15",
+    "node-fetch": "^2.6.1",
+    "nodemailer": "^6.4.17",
+    "nodemailer-smtp-transport": "^2.7.4",
+    "superagent": "^6.1.0",
+    "supertest": "^6.0.1"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^7.13.0",
+    "mocha": "^8.2.1",
+    "prettier": "^2.1.2",
+    "sinon": "^9.2.1"
+  }
+}

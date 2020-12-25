@@ -103,3 +103,15 @@ dist
 # TernJS port file
 .tern-port
 
+# Clinic
+.clinic/
+
+# SonarScanner
+.scannerwork/
+
+# Mongo dir
+mongo-db-dir/
+=======
+
+.vscode
+**/.DS_Store

@@ -111,7 +111,9 @@ dist
 
 # Mongo dir
 mongo-db-dir/
-=======
 
+# VS Code
 .vscode
+
+# OS X
 **/.DS_Store

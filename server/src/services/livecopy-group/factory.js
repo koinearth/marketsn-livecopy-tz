@@ -1,13 +1,10 @@
-const {
-  ContractAbstraction,
-  TezosOperationError,
-} = require("@taquito/taquito");
+const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
-const { logger } = require("../../logger");
 const { sendEmail } = require("./mailer");
 const { LiveCopyGroup } = require("./livecopy-group");
+const { ValidationError } = require("../../errors");
 
 class LiveCopyGroupFactory {
   /**
@@ -31,40 +28,21 @@ class LiveCopyGroupFactory {
    * @returns {Promise<{error: Error}>}
    */
   async requestGroupCreation(groupId, adminPublicKey, minSignaturesReqd) {
-    try {
-      const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        adminPublicKey,
-        "edpk"
-      );
-      TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
-      const groupAddress = await this.getGroupAddress(groupId);
-      if (groupAddress) {
-        return {
-          error: "groupId already exists",
-        };
-      }
-
-      if (minSignaturesReqd <= 0) {
-        return {
-          error: "minimum signatures should be atleast 1",
-        };
-      }
-
-      await sendEmail(groupId, adminPublicKey, minSignaturesReqd);
-
-      return {
-        error: null,
-      };
-    } catch (error) {
-      logger.error(error.message);
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
+    const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      adminPublicKey,
+      "edpk"
+    );
+    TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
+    const groupAddress = await this.getGroupAddress(groupId);
+    if (groupAddress) {
+      throw new ValidationError("groupId already exists");
     }
+
+    if (minSignaturesReqd <= 0) {
+      throw new ValidationError("minimum signatures should be atleast 1");
+    }
+
+    await sendEmail(groupId, adminPublicKey, minSignaturesReqd);
   }
 
   /**
@@ -85,38 +63,32 @@ class LiveCopyGroupFactory {
     timeStamp,
     livecopyAdminSignature
   ) {
-    try {
-      const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        adminPublicKey,
-        "edpk"
-      );
-      const adminAddress = TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
-      const createMethod = this.groupFactoryContract.methods["create"](
-        livecopyAdminSignature,
-        timeStamp.toString(),
-        adminAddress,
-        adminPublicKey,
-        groupId,
-        minSignaturesReqd
-      );
-      const transferParams = createMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(error.message);
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
+    // Check if groupId already exists
+    const groupAddress = await this.getGroupAddress(groupId);
+    if (groupAddress) {
+      throw new ValidationError("groupId already exists");
     }
+
+    const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      adminPublicKey,
+      "edpk"
+    );
+    const adminAddress = TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
+    const createMethod = this.groupFactoryContract.methods["create"](
+      livecopyAdminSignature,
+      timeStamp.toString(),
+      adminAddress,
+      adminPublicKey,
+      groupId,
+      minSignaturesReqd
+    );
+    const transferParams = createMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
@@ -126,28 +98,16 @@ class LiveCopyGroupFactory {
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
   async setNftAddress(nftAddress) {
-    try {
-      const setNftMethod = this.groupFactoryContract.methods["setNFTAddres"](
-        nftAddress
-      );
-      const transferParams = setNftMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
-    }
+    const setNftMethod = this.groupFactoryContract.methods["setNFTAddres"](
+      nftAddress
+    );
+    const transferParams = setNftMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
@@ -193,9 +153,7 @@ class LiveCopyGroupFactory {
   async getGroupInstance(groupId) {
     const groupAddress = await this.getGroupAddress(groupId);
     if (!groupAddress) {
-      return {
-        error: "GroupId not found",
-      };
+      throw new ValidationError("GroupId not found");
     }
 
     const groupContract = await this.tezosRpc.getContractInstance(groupAddress);
@@ -204,10 +162,7 @@ class LiveCopyGroupFactory {
       this.relayer,
       this.tezosRpc
     );
-    return {
-      error: null,
-      livecopyGroup,
-    };
+    return livecopyGroup;
   }
 }
 

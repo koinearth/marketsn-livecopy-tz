@@ -1,11 +1,7 @@
-const {
-  ContractAbstraction,
-  TezosOperationError,
-} = require("@taquito/taquito");
+const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
-const { logger } = require("../../logger");
 
 class LiveCopyGroup {
   /**
@@ -27,29 +23,17 @@ class LiveCopyGroup {
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
   async setAdmin(adminAddress, adminPublicKey) {
-    try {
-      const setAdminMethod = this.groupContract.methods["setAdmin"](
-        adminAddress,
-        adminPublicKey
-      );
-      const transferParams = setAdminMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
-    }
+    const setAdminMethod = this.groupContract.methods["setAdmin"](
+      adminAddress,
+      adminPublicKey
+    );
+    const transferParams = setAdminMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
@@ -69,41 +53,27 @@ class LiveCopyGroup {
     adminSignature,
     timestamp
   ) {
-    try {
-      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        signerPublicKey,
-        "edpk"
-      );
-      const signerAddress = TezosMessageUtils.computeKeyHash(
-        signerPublicKeyBuf
-      );
-      const addWhitelistedAddressMethod = this.groupContract.methods[
-        "insertWhitelistedAddress"
-      ](
-        signerAlias,
-        timestamp.toString(),
-        signerAddress,
-        adminSignature,
-        signerPublicKey
-      );
-      const transferParams = addWhitelistedAddressMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
-    }
+    const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      signerPublicKey,
+      "edpk"
+    );
+    const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+    const addWhitelistedAddressMethod = this.groupContract.methods[
+      "insertWhitelistedAddress"
+    ](
+      signerAlias,
+      timestamp.toString(),
+      signerAddress,
+      adminSignature,
+      signerPublicKey
+    );
+    const transferParams = addWhitelistedAddressMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
@@ -143,44 +113,29 @@ class LiveCopyGroup {
     signerPublicKey,
     signature
   ) {
-    try {
-      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        signerPublicKey,
-        "edpk"
-      );
-      const signerAddress = TezosMessageUtils.computeKeyHash(
-        signerPublicKeyBuf
-      );
-      const issueCertificateMethod = this.groupContract.methods["issueCert"](
-        assetType,
-        documentHash,
-        signerPublicKey,
-        signature,
-        signerAddress,
-        state,
-        issuedToAlias,
-        documentUrl,
-        tokenId
-      );
-      const transferParams = issueCertificateMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      console.log(error);
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
-    }
+    const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      signerPublicKey,
+      "edpk"
+    );
+    const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+    const issueCertificateMethod = this.groupContract.methods["issueCert"](
+      assetType,
+      documentHash,
+      signerPublicKey,
+      signature,
+      signerAddress,
+      state,
+      issuedToAlias,
+      documentUrl,
+      tokenId
+    );
+    const transferParams = issueCertificateMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 }
 

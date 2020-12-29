@@ -1,11 +1,7 @@
 "use strict";
 
 const { logger } = require("../../logger");
-const {
-  handleError,
-  FAILED_TXN_RESPONSE,
-  sendBadRequestErrMessage,
-} = require("../helper");
+const { handleError, sendBadRequestErrMessage } = require("../helper");
 
 // Request group creation from factory contract
 const requestGroup = async function (req, res) {
@@ -48,20 +44,11 @@ const requestGroup = async function (req, res) {
       return sendBadRequestErrMessage(res, "GroupId should be a valid string");
     }
 
-    const { error } = await livecopyGroupFactory.requestGroupCreation(
+    await livecopyGroupFactory.requestGroupCreation(
       GroupId,
       AdminPublicKey,
       Policy
     );
-    if (error) {
-      logger.error(error);
-      return res.status(420).send({
-        status: "error",
-        code: 420,
-        message: "failed to submit group creation request",
-        data: "",
-      });
-    }
 
     return res.status(200).send({
       status: "success",
@@ -149,17 +136,13 @@ const createGroup = async function (req, res) {
       );
     }
 
-    const { error, transactionHash } = await livecopyGroupFactory.createGroup(
+    const { transactionHash } = await livecopyGroupFactory.createGroup(
       GroupId,
       AdminPublicKey,
       Policy,
       Timestamp,
       LivecopyAdminSignature
     );
-    if (error) {
-      logger.error(error);
-      return res.status(420).send(FAILED_TXN_RESPONSE);
-    }
 
     logger.info("Group instance creation txn hash:", transactionHash);
     return res.status(200).send({
@@ -309,32 +292,13 @@ const addSignerToGroup = async function (req, res) {
       );
     }
 
-    const groupInstanceRes = await livecopyGroupFactory.getGroupInstance(
-      GroupId
-    );
-    if (groupInstanceRes.error) {
-      return res.status(200).send({
-        status: "error",
-        code: 420,
-        message: "failed to submit the transaction; groupId doesn't exists",
-        data: "",
-      });
-    }
-
-    const livecopyGroup = groupInstanceRes.livecopyGroup;
-    const {
-      error,
-      transactionHash,
-    } = await livecopyGroup.addWhitelistedAddress(
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
+    const { transactionHash } = await livecopyGroup.addWhitelistedAddress(
       SignerAccount,
       SignerName,
       AdminSignature,
       Timestamp
     );
-    if (error) {
-      logger.error(error);
-      return res.status(420).send(FAILED_TXN_RESPONSE);
-    }
 
     logger.info("Add whitelistist acct. txn hash:", transactionHash);
     return res.status(200).send({
@@ -353,18 +317,7 @@ const listWhitelistedAddresses = async function (req, res) {
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
     const { groupId } = req.params;
-    const {
-      error,
-      livecopyGroup,
-    } = await livecopyGroupFactory.getGroupInstance(groupId);
-    if (error) {
-      return res.status(420).send({
-        status: "error",
-        code: 420,
-        message: "failed to query the contract; groupId doesn't exists",
-        data: "",
-      });
-    }
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(groupId);
 
     const whiteListedAddresses = await livecopyGroup.getWhitelistedAddresses();
     return res.status(200).send({

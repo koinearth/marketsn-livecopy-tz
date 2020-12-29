@@ -329,7 +329,37 @@ class TezosRPC {
         blockHash,
       };
     } catch (error) {
+      if (error.response) {
+        const errorMessage = this._parseRpcError(error);
+        return {
+          error: {
+            message: errorMessage,
+          },
+        };
+      }
       return { error };
+    }
+  }
+
+  // Try parsing RPC errs for contract logic throws(`script_rejected`)
+  // If err. can't be interpreted, return back as is
+  _parseRpcError(error) {
+    try {
+      const response = JSON.parse(error.response.replace(/\'/, ""));
+
+      if (response.contents && Array.isArray(response.contents)) {
+        let errMessages = response.contents[0].metadata.operation_result.errors;
+        errMessages = errMessages.filter((err) =>
+          err.id.includes("script_rejected")
+        );
+        return errMessages.reduce(function (prevVal, curr) {
+          return prevVal + curr.with.string;
+        }, "");
+      }
+
+      return error;
+    } catch (error) {
+      return error;
     }
   }
 }

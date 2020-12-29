@@ -29,7 +29,7 @@ const NETWORK_CONFIG = {
     networkId: "NetXdQprcVkpaWU",
   },
   delphinet: {
-    rpc: "https://delphinet.smartpy.io",
+    rpc: "https://delphinet-tezos.giganode.io",
     noOfConfirmations: 1,
     conseilServer: {
       url: "https://conseil-dev.cryptonomic-infra.tech",

@@ -14,12 +14,7 @@ describe("Livecopy Group", () => {
   before(async () => {
     const res = await initialize();
     const livecopyGroupFactory = res.livecopyGroupFactory;
-    const livecopyGroupInstanceRes = await livecopyGroupFactory.getGroupInstance(
-      "dummyGroupId"
-    );
-    if (livecopyGroupInstanceRes.error) throw livecopyGroupInstanceRes.error;
-
-    livecopyGroup = livecopyGroupInstanceRes.livecopyGroup;
+    livecopyGroup = await livecopyGroupFactory.getGroupInstance("dummyGroupId");
     adminSecretKey =
       "edskRqFp3Z9AqoKrMNFb9bnWNwEsRzbjqjBhzmFMLF9UqB6VBmw7F8ppTiXaAnHtysmi6xFxoHf6rMUz6Y1ipiDz2EgwZQv3pa";
   });

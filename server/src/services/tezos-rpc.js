@@ -332,9 +332,7 @@ class TezosRPC {
       if (error.response) {
         const errorMessage = this._parseRpcError(error);
         return {
-          error: {
-            message: errorMessage,
-          },
+          error: errorMessage,
         };
       }
       return { error };

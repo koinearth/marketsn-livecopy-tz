@@ -10,10 +10,11 @@ function handleError(err, res) {
 
   // Handle txn related errs
   if (err instanceof TransactionError) {
+    logger.error(err);
     return res.status(420).send({
       status: "error",
       code: "420",
-      message: `failed to submit the transaction with err: ${err.message}`,
+      message: err.message,
       data: "",
     });
   }

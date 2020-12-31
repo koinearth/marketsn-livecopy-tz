@@ -2,6 +2,7 @@ const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
+const { ValidationError } = require("../../errors");
 
 class LiveCopyGroup {
   /**
@@ -58,6 +59,12 @@ class LiveCopyGroup {
       "edpk"
     );
     const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+
+    const whitelistedAddresses = await this.getWhitelistedAddresses();
+    if (whitelistedAddresses.indexOf(signerAddress) > -1) {
+      throw new ValidationError("Signer address already whitelisted");
+    }
+
     const addWhitelistedAddressMethod = this.groupContract.methods[
       "insertWhitelistedAddress"
     ](
@@ -79,7 +86,7 @@ class LiveCopyGroup {
   /**
    * Returns whitelisted signer addresses of a group instance
    *
-   * @returns {string[]}
+   * @returns {Promise<string[]>}
    */
   async getWhitelistedAddresses() {
     const storageList = await this.groupContract.storage();

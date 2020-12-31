@@ -313,13 +313,13 @@ export default [
                                       "prim": "pair",
                                       "args": [
                                         { "prim": "pair", "args": [ { "prim": "string", "annots": [ "%_assetType" ] }, { "prim": "bytes", "annots": [ "%_hash" ] } ] },
-                                        { "prim": "pair", "args": [ { "prim": "key", "annots": [ "%_publicSignerHash" ] }, { "prim": "signature", "annots": [ "%_sigS" ] } ] }
+                                        { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%_publicSignerHash" ] }, { "prim": "signature", "annots": [ "%_sigS" ] } ] }
                                       ]
                                     },
                                     {
                                       "prim": "pair",
                                       "args": [
-                                        { "prim": "pair", "args": [ { "prim": "address", "annots": [ "%_signerPublicKey" ] }, { "prim": "string", "annots": [ "%_state" ] } ] },
+                                        { "prim": "pair", "args": [ { "prim": "key", "annots": [ "%_signerPublicKey" ] }, { "prim": "string", "annots": [ "%_state" ] } ] },
                                         {
                                           "prim": "pair",
                                           "args": [
@@ -775,8 +775,8 @@ export default [
                                       { "prim": "SWAP" },
                                       { "prim": "DUP" },
                                       { "prim": "DUG", "args": [ { "int": "2" } ] },
-                                      { "prim": "CAR" },
                                       { "prim": "CDR" },
+                                      { "prim": "CAR" },
                                       { "prim": "CAR" },
                                       { "prim": "PACK" },
                                       { "prim": "MEM" },
@@ -789,7 +789,7 @@ export default [
                                               "prim": "PUSH",
                                               "args": [
                                                 { "prim": "string" },
-                                                { "string": "WrongCondition: self.data.whiteListedAddresses.contains(sp.pack(params._publicSignerHash))" }
+                                                { "string": "WrongCondition: self.data.whiteListedAddresses.contains(sp.pack(params._signerPublicKey))" }
                                               ]
                                             },
                                             { "prim": "FAILWITH" }
@@ -808,8 +808,8 @@ export default [
                                       { "prim": "SWAP" },
                                       { "prim": "DUP" },
                                       { "prim": "DUG", "args": [ { "int": "3" } ] },
-                                      { "prim": "CAR" },
                                       { "prim": "CDR" },
+                                      { "prim": "CAR" },
                                       { "prim": "CAR" },
                                       { "prim": "CHECK_SIGNATURE" },
                                       {
@@ -1180,8 +1180,8 @@ export default [
                                                   { "prim": "SWAP" },
                                                   { "prim": "DUP" },
                                                   { "prim": "DUG", "args": [ { "int": "2" } ] },
-                                                  { "prim": "CAR" },
                                                   { "prim": "CDR" },
+                                                  { "prim": "CAR" },
                                                   { "prim": "CAR" },
                                                   { "prim": "PACK" },
                                                   { "prim": "MEM" }
@@ -1227,8 +1227,8 @@ export default [
                                                   { "prim": "DIG", "args": [ { "int": "2" } ] },
                                                   { "prim": "DUP" },
                                                   { "prim": "DUG", "args": [ { "int": "3" } ] },
-                                                  { "prim": "CAR" },
                                                   { "prim": "CDR" },
+                                                  { "prim": "CAR" },
                                                   { "prim": "CAR" },
                                                   { "prim": "PACK" },
                                                   { "prim": "GET" },
@@ -1249,7 +1249,7 @@ export default [
                                                             { "prim": "string" },
                                                             {
                                                               "string":
-                                                                "WrongCondition: self.data.tokenAuthSings[params.tokenId][params._hash][sp.pack(params._publicSignerHash)] == False"
+                                                                "WrongCondition: self.data.tokenAuthSings[params.tokenId][params._hash][sp.pack(params._signerPublicKey)] == False"
                                                             }
                                                           ]
                                                         },
@@ -1418,8 +1418,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "14" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "15" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "UPDATE" },
@@ -1503,8 +1503,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "14" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "15" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "GET" },
@@ -1569,8 +1569,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "9" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "10" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             {
@@ -1763,8 +1763,8 @@ export default [
                                                   { "prim": "SWAP" },
                                                   { "prim": "DUP" },
                                                   { "prim": "DUG", "args": [ { "int": "2" } ] },
-                                                  { "prim": "CAR" },
                                                   { "prim": "CDR" },
+                                                  { "prim": "CAR" },
                                                   { "prim": "CAR" },
                                                   { "prim": "PACK" },
                                                   { "prim": "MEM" }
@@ -1810,8 +1810,8 @@ export default [
                                                   { "prim": "DIG", "args": [ { "int": "2" } ] },
                                                   { "prim": "DUP" },
                                                   { "prim": "DUG", "args": [ { "int": "3" } ] },
-                                                  { "prim": "CAR" },
                                                   { "prim": "CDR" },
+                                                  { "prim": "CAR" },
                                                   { "prim": "CAR" },
                                                   { "prim": "PACK" },
                                                   { "prim": "GET" },
@@ -1832,7 +1832,7 @@ export default [
                                                             { "prim": "string" },
                                                             {
                                                               "string":
-                                                                "WrongCondition: self.data.tokenAuthSings[params.tokenId][params._hash][sp.pack(params._publicSignerHash)] == False"
+                                                                "WrongCondition: self.data.tokenAuthSings[params.tokenId][params._hash][sp.pack(params._signerPublicKey)] == False"
                                                             }
                                                           ]
                                                         },
@@ -2004,8 +2004,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "12" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "13" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "GET" },
@@ -2017,8 +2017,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "11" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "12" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "UPDATE" },
@@ -2088,8 +2088,8 @@ export default [
                                             { "prim": "DIG", "args": [ { "int": "9" } ] },
                                             { "prim": "DUP" },
                                             { "prim": "DUG", "args": [ { "int": "10" } ] },
-                                            { "prim": "CAR" },
                                             { "prim": "CDR" },
+                                            { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "UPDATE" },
@@ -3135,3 +3135,4 @@ export default [
     ]
   }
 ];
+

@@ -1,6 +1,7 @@
 const supertest = require("supertest");
 const { expect } = require("chai");
 const faker = require("faker");
+const log4js = require("log4js");
 
 const { createExpressApp } = require("../../src/server");
 const mongo = require("../../src/db");
@@ -14,6 +15,7 @@ const {
 const {
   assertBadRequestErrorMessage,
 } = require("../helpers/responseAssertions");
+const { logger } = require("../../src/logger");
 
 let testSuite;
 
@@ -45,6 +47,9 @@ describe("Livecopy integration test", () => {
     // Drop collection - start clean
     mongoConnection = await mongo.connect();
     mongoConnection.models.transactions.collection.drop();
+
+    // Set loglevel to error
+    logger.level = log4js.levels.ERROR;
 
     // Generate group admin keypair
     const groupAdminKp = await generateKeyPair();

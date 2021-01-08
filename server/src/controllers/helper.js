@@ -5,7 +5,6 @@ const { ValidationError, TransactionError } = require("../errors");
 function handleError(err, res) {
   // Handle validation errs.
   if (err instanceof ValidationError) {
-    logger.error(`Validation Err: ${err.message}`);
     return sendBadRequestErrMessage(res, err.message);
   }
 

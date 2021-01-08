@@ -45,7 +45,7 @@ const issueCert = async function (req, res) {
     }
 
     // TokenId validations
-    if (!TokenId) {
+    if (TokenId === null || TokenId === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter TokenId in request"
@@ -139,7 +139,7 @@ const issueCert = async function (req, res) {
     logger.info("Issue cert txn hash:", transactionHash);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully submitted the transaction",
       data: { transactionHash },
     });
@@ -163,7 +163,7 @@ const getCert = async function (req, res) {
     const tokenDetails = await livecopyNft.getTokenData(TokenId);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully queried the smart contract",
       data: tokenDetails,
     });

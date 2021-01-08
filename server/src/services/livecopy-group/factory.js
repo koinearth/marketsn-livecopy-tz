@@ -5,6 +5,8 @@ const { Relayer } = require("../relayer");
 const { sendEmail } = require("./mailer");
 const { LiveCopyGroup } = require("./livecopy-group");
 const { ValidationError } = require("../../errors");
+const { validatePublicKey } = require("../../utils");
+const { verifyGroupCreationSignature } = require("../signatureVerifier");
 
 class LiveCopyGroupFactory {
   /**
@@ -28,18 +30,18 @@ class LiveCopyGroupFactory {
    * @returns {Promise<{error: Error}>}
    */
   async requestGroupCreation(groupId, adminPublicKey, minSignaturesReqd) {
-    const adminPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-      adminPublicKey,
-      "edpk"
-    );
-    TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
-    const groupAddress = await this.getGroupAddress(groupId);
-    if (groupAddress) {
-      throw new ValidationError("groupId already exists");
+    const isValid = validatePublicKey(adminPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid admin public key");
     }
 
     if (minSignaturesReqd <= 0) {
       throw new ValidationError("minimum signatures should be atleast 1");
+    }
+
+    const groupAddress = await this.getGroupAddress(groupId);
+    if (groupAddress) {
+      throw new ValidationError("groupId already exists");
     }
 
     await sendEmail(groupId, adminPublicKey, minSignaturesReqd);
@@ -63,6 +65,12 @@ class LiveCopyGroupFactory {
     timeStamp,
     livecopyAdminSignature
   ) {
+    // Validate group admin pub key
+    const isValid = validatePublicKey(adminPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid admin public key");
+    }
+
     // Check if groupId already exists
     const groupAddress = await this.getGroupAddress(groupId);
     if (groupAddress) {
@@ -74,6 +82,21 @@ class LiveCopyGroupFactory {
       "edpk"
     );
     const adminAddress = TezosMessageUtils.computeKeyHash(adminPublicKeyBuf);
+
+    // Validate livecopy admin signature
+    const livecopyAdminPublicKey = await this.getLiveCopyAdminPubKey();
+    const sigVerified = await verifyGroupCreationSignature(
+      groupId,
+      adminPublicKey,
+      minSignaturesReqd,
+      timeStamp,
+      livecopyAdminPublicKey,
+      livecopyAdminSignature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid livecopy admin signature");
+    }
+
     const createMethod = this.groupFactoryContract.methods["create"](
       livecopyAdminSignature,
       timeStamp.toString(),
@@ -163,6 +186,11 @@ class LiveCopyGroupFactory {
       this.tezosRpc
     );
     return livecopyGroup;
+  }
+
+  async getLiveCopyAdminPubKey() {
+    const storageList = await this.groupFactoryContract.storage();
+    return storageList.factoryAdminPublicKey;
   }
 }
 

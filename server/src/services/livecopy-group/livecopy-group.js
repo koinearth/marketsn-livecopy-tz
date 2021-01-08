@@ -3,6 +3,11 @@ const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
 const { ValidationError } = require("../../errors");
+const { validatePublicKey } = require("../../utils");
+const {
+  verifyWhitelistAddressUpdationSignature,
+  verifyTokenIssuanceSignature,
+} = require("../signatureVerifier");
 
 class LiveCopyGroup {
   /**
@@ -54,6 +59,12 @@ class LiveCopyGroup {
     adminSignature,
     timestamp
   ) {
+    // Validate signer pub key
+    const isValid = validatePublicKey(signerPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid signer public key");
+    }
+
     const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
       signerPublicKey,
       "edpk"
@@ -63,6 +74,20 @@ class LiveCopyGroup {
     const whitelistedAddresses = await this.getWhitelistedAddresses();
     if (whitelistedAddresses.indexOf(signerAddress) > -1) {
       throw new ValidationError("Signer address already whitelisted");
+    }
+
+    // Validate admin signature
+    const groupAdminPublicKey = await this.getGroupAdminPubKey();
+    const sigVerified = await verifyWhitelistAddressUpdationSignature(
+      signerAddress,
+      signerPublicKey,
+      signerAlias,
+      timestamp,
+      groupAdminPublicKey,
+      adminSignature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid group admin signature");
     }
 
     const addWhitelistedAddressMethod = this.groupContract.methods[
@@ -120,11 +145,28 @@ class LiveCopyGroup {
     signerPublicKey,
     signature
   ) {
+    // Validate signer pub key
+    const isValid = validatePublicKey(signerPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid signer public key");
+    }
+
     const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
       signerPublicKey,
       "edpk"
     );
     const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+
+    // Validate signature
+    const sigVerified = await verifyTokenIssuanceSignature(
+      documentHash,
+      signerPublicKey,
+      signature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid signature");
+    }
+
     const issueCertificateMethod = this.groupContract.methods["issueCert"](
       assetType,
       documentHash,
@@ -143,6 +185,11 @@ class LiveCopyGroup {
     return {
       transactionHash,
     };
+  }
+
+  async getGroupAdminPubKey() {
+    const storageList = await this.groupContract.storage();
+    return storageList.adminPublicKey;
   }
 }
 

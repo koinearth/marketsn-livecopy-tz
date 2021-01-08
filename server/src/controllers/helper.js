@@ -14,7 +14,7 @@ function handleError(err, res) {
     logger.error(`Transaction Err: ${JSON.stringify(err.message)}`);
     return res.status(420).send({
       status: "error",
-      code: "420",
+      code: 420,
       message: err.message,
       data: "",
     });
@@ -24,7 +24,7 @@ function handleError(err, res) {
   logger.error(`Error: ${JSON.stringify(err)}`);
   let responseText = {
     status: "error",
-    code: "422",
+    code: 422,
     message: "Unknown error",
     data: "",
   };
@@ -34,7 +34,7 @@ function handleError(err, res) {
 function sendBadRequestErrMessage(res, message) {
   return res.status(400).send({
     status: "error",
-    code: "400",
+    code: 400,
     message,
     data: "",
   });

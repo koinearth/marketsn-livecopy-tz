@@ -1,20 +1,27 @@
-const { SoftSigner, KeyStoreUtils } = require("conseiljs-softsigner");
+const {
+  SoftSigner,
+  KeyStoreUtils,
+  CryptoUtils,
+} = require("conseiljs-softsigner");
 const { TezosMessageUtils } = require("conseiljs");
 
 /**
- * Given a string message, hash the message and
+ * Given a hex. message, hash the message and
  * verify if the signature matches against the pubkey for the above hash
  *
  * @param {string} signature - Ed25519 signature
- * @param {string} message - String message signed
+ * @param {string} message - Hex message signed
  * @param {string} publicKey - Ed25519 pubkey
  */
 async function verifySignature(signature, message, publicKey) {
-  return KeyStoreUtils.checkTextSignature(signature, message, publicKey, false);
+  const messageBytes = TezosMessageUtils.simpleHash(hex2buf(message), 32);
+  const sig = TezosMessageUtils.writeSignatureWithHint(signature, "edsig");
+  const pk = TezosMessageUtils.writeKeyWithHint(publicKey, "edpk");
+  return CryptoUtils.checkSignature(sig, messageBytes, pk);
 }
 
 /**
- * Sign a string message using the secretKey
+ * Sign a message using the secretKey
  *
  * @param {string} message - Message to be signed
  * @param {string} secretKey - Secret Key to be used for signing
@@ -94,10 +101,30 @@ const hex2buf = (hex) => {
   return new Uint8Array(arr);
 };
 
+/**
+ * Validate a public key
+ *
+ * There is no inbuilt pub key validation
+ * Therfore,
+ * - Try converting pubkey to address
+ * - On err, return false
+ * @param {string} pubKey
+ */
+function validatePublicKey(pubKey) {
+  try {
+    const publicKeyBuf = TezosMessageUtils.writeKeyWithHint(pubKey, "edpk");
+    TezosMessageUtils.computeKeyHash(publicKeyBuf);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 module.exports = {
   verifySignature,
   sign,
   createBlake2bhash,
   getAccountInfo,
   hex2buf,
+  validatePublicKey,
 };

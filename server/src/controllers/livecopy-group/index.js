@@ -23,7 +23,7 @@ const requestGroup = async function (req, res) {
     }
 
     // Policy validations
-    if (!Policy) {
+    if (Policy === null || Policy === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter Policy in request"
@@ -52,7 +52,7 @@ const requestGroup = async function (req, res) {
 
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully submitted request for group creation",
       data: "",
     });
@@ -87,7 +87,7 @@ const createGroup = async function (req, res) {
     }
 
     // Policy validations
-    if (!Policy) {
+    if (Policy === null || Policy === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter Policy in request"
@@ -109,7 +109,7 @@ const createGroup = async function (req, res) {
     }
 
     // Timestamp Validations
-    if (!Timestamp) {
+    if (Timestamp === null || Timestamp === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter Timestamp in request"
@@ -129,7 +129,7 @@ const createGroup = async function (req, res) {
         "Missing parameter LivecopyAdminSignature in request"
       );
     }
-    if (typeof GroupId !== "string") {
+    if (typeof LivecopyAdminSignature !== "string") {
       return sendBadRequestErrMessage(
         res,
         "LivecopyAdminSignature should be a valid string"
@@ -147,7 +147,7 @@ const createGroup = async function (req, res) {
     logger.info("Group instance creation txn hash:", transactionHash);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully submitted the transaction",
       data: { transactionHash },
     });
@@ -165,14 +165,14 @@ const getGroupAddress = async function (req, res) {
     if (!groupAddress) {
       return res.status(422).send({
         status: "error",
-        code: "422",
+        code: 422,
         message: "GroupId not found in the smart contract",
         data: "",
       });
     }
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully queried the smart contract",
       data: groupAddress,
     });
@@ -188,7 +188,7 @@ const listAllGroups = async function (req, res) {
     const groups = await livecopyGroupFactory.listAllGroups();
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully queried the smart contract",
       data: {
         groups,
@@ -279,7 +279,7 @@ const addSignerToGroup = async function (req, res) {
     }
 
     // Timestamp Validations
-    if (!Timestamp) {
+    if (Timestamp === null || Timestamp === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter Timestamp in request"
@@ -303,7 +303,7 @@ const addSignerToGroup = async function (req, res) {
     logger.info("Add whitelistist acct. txn hash:", transactionHash);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully submitted the transaction",
       data: { transactionHash },
     });
@@ -322,7 +322,7 @@ const listWhitelistedAddresses = async function (req, res) {
     const whiteListedAddresses = await livecopyGroup.getWhitelistedAddresses();
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully queried the smart contract",
       data: whiteListedAddresses,
     });

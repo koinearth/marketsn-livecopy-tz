@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const sinon = require("sinon");
+const faker = require("faker");
 
 const { initialize } = require("../../src/server");
 const { generateKeyPair } = require("../helpers/keypair");
@@ -8,8 +9,7 @@ const { sign, createBlake2bhash } = require("../../src/utils");
 
 describe("Livecopy Group Factory", () => {
   let livecopyGroupFactory;
-  const groupId = "dummyGroupId",
-    livecopyAdminSecretKey =
+  const livecopyAdminSecretKey =
       "edskRqFp3Z9AqoKrMNFb9bnWNwEsRzbjqjBhzmFMLF9UqB6VBmw7F8ppTiXaAnHtysmi6xFxoHf6rMUz6Y1ipiDz2EgwZQv3pa",
     livecopyAdminPublicKey =
       "edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2";
@@ -31,6 +31,7 @@ describe("Livecopy Group Factory", () => {
 
     const minSignaturesReqd = 2;
     const timestamp = Date.now();
+    const groupId = faker.company.companyName();
 
     // Create admin signature
     const message = packDataForGroupCreation(
@@ -107,6 +108,7 @@ describe("Livecopy Group Factory", () => {
   });
 
   it("should get a group instance address", async () => {
+    const groupId = "dummyGroupId";
     const groupInstanceAddress = await livecopyGroupFactory.getGroupAddress(
       groupId
     );

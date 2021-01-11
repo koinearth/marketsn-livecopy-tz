@@ -1,4 +1,5 @@
 const { expect } = require("chai");
+const faker = require("faker");
 
 const { createBlake2bhash, sign, verifySignature } = require("../../src/utils");
 const { generateKeyPair } = require("../helpers/keypair");
@@ -14,7 +15,7 @@ describe("signature", () => {
   });
 
   it("should generate signature", async () => {
-    const messageToSign = "KoineArth Marketsn";
+    const messageToSign = faker.random.hexaDecimal(32);
     const signature = await sign(messageToSign, secretKey);
     expect(signature).to.be.not.null;
   });
@@ -29,10 +30,10 @@ describe("signature", () => {
   });
 
   it("should verify signature", async () => {
-    const messageToSign = "KoineArth Marketsn";
+    const messageToSign = "0x2c18eEfeCaecd45b67281d526737E0AE";
     const signature =
-      "edsigtvDZNLcik89HMe8NMUxLn2ZEvrzcBo5GrtgPtLMGJDq6dUJGpf59YNMVLDeYxQT7ordwZDts46RkFQL4ys8GgGAz8b2WWf";
-    const publicKey = "edpkvQdiGuxYTsVj1AP39BeAtwNgZoReM57YZFLhH6TVrdZA2kaddK";
+      "edsigtsDgag7xEUfQC4tuPhJMZkZ6JndgXzzh7CJJ6yCvj276z2ZzxhgELmcTvCMhgxdaYhBRdH2MQbCCpUaztaM96HatFkANE9";
+    const publicKey = "edpkurmAsQcGc8XL9FurfVskXoNFb7W5XCnAfSEtosbLa6mCXua2ib";
 
     const isVerified = await verifySignature(
       signature,

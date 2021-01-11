@@ -1,6 +1,22 @@
 # marketsn-livecopy-tz
 
-## Instructions
+## 1. Contracts
+
+- Oracle
+- Oracle Factory
+- NFT Address (FA2)
+
+Contract Codes can be found [here](https://github.com/vinnyson/koinearth-smartcontract/tree/main/Contracts)
+
+In order to deploy, you can run `Yarn`
+
+- node --require @babel/register .\originateScripts\originateOracle.js
+- node --require @babel/register .\originateScripts\originateOralceFactory.js
+- node --require @babel/register .\originateScripts\originateNFT.js
+
+## 2. API Server
+
+### Instructions
 
 - Installing dependencies
 
@@ -42,19 +58,6 @@ Integration tests can be run using:
   npm run test:integration
 ```
 
-## Documentation
+### API Documentation
 
 - [API Specs](server/docs/index.md)
-=======
-
-## Contracts
-* Oracle
-* Oracle Factory
-* NFT Address (FA2)
-
-Contract Codes can be found [here](https://github.com/vinnyson/koinearth-smartcontract/tree/main/Contracts)
-
-In order to deploy, you can run `Yarn`
-* node --require @babel/register .\originateScripts\originateOracle.js
-* node --require @babel/register .\originateScripts\originateOralceFactory.js
-* node --require @babel/register .\originateScripts\originateNFT.js

@@ -1,11 +1,7 @@
 "use strict";
 
 const { logger } = require("../../logger");
-const {
-  handleError,
-  FAILED_TXN_RESPONSE,
-  sendBadRequestErrMessage,
-} = require("../helper");
+const { handleError, sendBadRequestErrMessage } = require("../helper");
 
 // Issue an NFT corr. to a group
 const issueCert = async function (req, res) {
@@ -49,7 +45,7 @@ const issueCert = async function (req, res) {
     }
 
     // TokenId validations
-    if (!TokenId) {
+    if (TokenId === null || TokenId === undefined) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter TokenId in request"
@@ -128,21 +124,8 @@ const issueCert = async function (req, res) {
       return sendBadRequestErrMessage(res, "URL should be a valid string");
     }
 
-    const groupInstanceRes = await livecopyGroupFactory.getGroupInstance(
-      GroupId
-    );
-    if (groupInstanceRes.error) {
-      return res.status(200).send({
-        status: "error",
-        code: 420,
-        message: "failed to submit the transaction; groupId doesn't exists",
-        data: "",
-      });
-    }
-
-    const livecopyGroup = groupInstanceRes.livecopyGroup;
-
-    const { error, transactionHash } = await livecopyGroup.issueCertificate(
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
+    const { transactionHash } = await livecopyGroup.issueCertificate(
       TokenId,
       AssetType,
       URL,
@@ -152,15 +135,11 @@ const issueCert = async function (req, res) {
       SignerPublicKey,
       Signature
     );
-    if (error) {
-      logger.error(error);
-      return res.status(420).send(FAILED_TXN_RESPONSE);
-    }
 
     logger.info("Issue cert txn hash:", transactionHash);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully submitted the transaction",
       data: { transactionHash },
     });
@@ -184,7 +163,7 @@ const getCert = async function (req, res) {
     const tokenDetails = await livecopyNft.getTokenData(TokenId);
     return res.status(200).send({
       status: "success",
-      code: "200",
+      code: 200,
       message: "Successfully queried the smart contract",
       data: tokenDetails,
     });

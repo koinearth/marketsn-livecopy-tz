@@ -1,11 +1,13 @@
-const {
-  ContractAbstraction,
-  TezosOperationError,
-} = require("@taquito/taquito");
+const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosMessageUtils } = require("conseiljs");
 const { TezosRPC } = require("../tezos-rpc");
 const { Relayer } = require("../relayer");
-const { logger } = require("../../logger");
+const { ValidationError } = require("../../errors");
+const { validatePublicKey } = require("../../utils");
+const {
+  verifyWhitelistAddressUpdationSignature,
+  verifyTokenIssuanceSignature,
+} = require("../signatureVerifier");
 
 class LiveCopyGroup {
   /**
@@ -27,29 +29,17 @@ class LiveCopyGroup {
    * @returns {Promise<{error: Error, transactionHash: string}>}
    */
   async setAdmin(adminAddress, adminPublicKey) {
-    try {
-      const setAdminMethod = this.groupContract.methods["setAdmin"](
-        adminAddress,
-        adminPublicKey
-      );
-      const transferParams = setAdminMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
-    }
+    const setAdminMethod = this.groupContract.methods["setAdmin"](
+      adminAddress,
+      adminPublicKey
+    );
+    const transferParams = setAdminMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
@@ -69,47 +59,59 @@ class LiveCopyGroup {
     adminSignature,
     timestamp
   ) {
-    try {
-      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        signerPublicKey,
-        "edpk"
-      );
-      const signerAddress = TezosMessageUtils.computeKeyHash(
-        signerPublicKeyBuf
-      );
-      const addWhitelistedAddressMethod = this.groupContract.methods[
-        "insertWhitelistedAddress"
-      ](
-        signerAlias,
-        timestamp.toString(),
-        signerAddress,
-        adminSignature,
-        signerPublicKey
-      );
-      const transferParams = addWhitelistedAddressMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
+    // Validate signer pub key
+    const isValid = validatePublicKey(signerPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid signer public key");
     }
+
+    const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      signerPublicKey,
+      "edpk"
+    );
+    const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+
+    const whitelistedAddresses = await this.getWhitelistedAddresses();
+    if (whitelistedAddresses.indexOf(signerAddress) > -1) {
+      throw new ValidationError("Signer address already whitelisted");
+    }
+
+    // Validate admin signature
+    const groupAdminPublicKey = await this.getGroupAdminPubKey();
+    const sigVerified = await verifyWhitelistAddressUpdationSignature(
+      signerAddress,
+      signerPublicKey,
+      signerAlias,
+      timestamp,
+      groupAdminPublicKey,
+      adminSignature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid group admin signature");
+    }
+
+    const addWhitelistedAddressMethod = this.groupContract.methods[
+      "insertWhitelistedAddress"
+    ](
+      signerAlias,
+      timestamp.toString(),
+      signerAddress,
+      adminSignature,
+      signerPublicKey
+    );
+    const transferParams = addWhitelistedAddressMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
   }
 
   /**
    * Returns whitelisted signer addresses of a group instance
    *
-   * @returns {string[]}
+   * @returns {Promise<string[]>}
    */
   async getWhitelistedAddresses() {
     const storageList = await this.groupContract.storage();
@@ -143,44 +145,51 @@ class LiveCopyGroup {
     signerPublicKey,
     signature
   ) {
-    try {
-      const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
-        signerPublicKey,
-        "edpk"
-      );
-      const signerAddress = TezosMessageUtils.computeKeyHash(
-        signerPublicKeyBuf
-      );
-      const issueCertificateMethod = this.groupContract.methods["issueCert"](
-        assetType,
-        documentHash,
-        signerPublicKey,
-        signature,
-        signerAddress,
-        state,
-        issuedToAlias,
-        documentUrl,
-        tokenId
-      );
-      const transferParams = issueCertificateMethod.toTransferParams();
-      const transactionHash = await this.relayer.sendContractInvocation(
-        transferParams
-      );
-      return {
-        error: null,
-        transactionHash,
-      };
-    } catch (error) {
-      console.log(error);
-      logger.error(JSON.stringify(error.message));
-      if (error instanceof TezosOperationError) {
-        logger.error("Operation error");
-      }
-
-      return {
-        error: error.message,
-      };
+    // Validate signer pub key
+    const isValid = validatePublicKey(signerPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid signer public key");
     }
+
+    const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      signerPublicKey,
+      "edpk"
+    );
+    const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+
+    // Validate signature
+    const sigVerified = await verifyTokenIssuanceSignature(
+      documentHash,
+      signerPublicKey,
+      signature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid signature");
+    }
+
+    const issueCertificateMethod = this.groupContract.methods["issueCert"](
+      assetType,
+      documentHash,
+      signerPublicKey,
+      signature,
+      signerAddress,
+      state,
+      issuedToAlias,
+      documentUrl,
+      tokenId
+    );
+    const transferParams = issueCertificateMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
+  }
+
+  async getGroupAdminPubKey() {
+    const storageList = await this.groupContract.storage();
+    return storageList.adminPublicKey;
   }
 }
 

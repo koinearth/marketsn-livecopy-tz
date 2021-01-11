@@ -9,19 +9,15 @@ const {
 } = require("../helpers/packDataHelper");
 
 describe("Livecopy Group", () => {
-  let livecopyGroup, adminSecretKey;
+  let livecopyGroup, adminSecretKey, adminPublicKey;
 
   before(async () => {
     const res = await initialize();
     const livecopyGroupFactory = res.livecopyGroupFactory;
-    const livecopyGroupInstanceRes = await livecopyGroupFactory.getGroupInstance(
-      "dummyGroupId"
-    );
-    if (livecopyGroupInstanceRes.error) throw livecopyGroupInstanceRes.error;
-
-    livecopyGroup = livecopyGroupInstanceRes.livecopyGroup;
+    livecopyGroup = await livecopyGroupFactory.getGroupInstance("dummyGroupId");
     adminSecretKey =
       "edskRqFp3Z9AqoKrMNFb9bnWNwEsRzbjqjBhzmFMLF9UqB6VBmw7F8ppTiXaAnHtysmi6xFxoHf6rMUz6Y1ipiDz2EgwZQv3pa";
+    adminPublicKey = "edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2";
   });
 
   afterEach(() => {
@@ -59,6 +55,8 @@ describe("Livecopy Group", () => {
   });
 
   it("should add signer address", async () => {
+    sinon.stub(livecopyGroup, "getGroupAdminPubKey").returns(adminPublicKey);
+
     const {
       publicKey: signerPublicKey,
       address: signerAddress,

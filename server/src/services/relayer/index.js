@@ -3,6 +3,7 @@ const { getAccountInfo } = require("../../utils");
 const { transactionsModel } = require("../../models/transactions/schema");
 const { config } = require("../../config");
 const { logger } = require("../../logger");
+const { TransactionError } = require("../../errors");
 
 class Relayer {
   /**
@@ -43,8 +44,8 @@ class Relayer {
     const relayer = this._chooseRelayer();
     if (!relayer) {
       throw new Error(
-        "No proxy account available for executing transaction; \
-      All are currently busy carrying out transactions"
+        "No proxy account available for executing transaction;" +
+          "All are currently busy carrying out transactions"
       );
     }
 
@@ -56,9 +57,9 @@ class Relayer {
     } = await this.tezosRpc.invokeContract(relayer.secretKey, transferParams);
 
     // Errored, throw back err, add relayer as available and return
-    if (error) {
+    if (error || !operationHash) {
       this._addBackRelayer(relayer);
-      throw error;
+      throw new TransactionError(error);
     }
 
     // Success, save txn details to db with status as pending

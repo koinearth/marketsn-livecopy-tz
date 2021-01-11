@@ -103,8 +103,8 @@ class Oracle(sp.Contract):
         sp.set_type(params._assetType, sp.TString)
         sp.set_type(params._state, sp.TString)
         sp.set_type(params._url, sp.TString)
-        sp.set_type(params._signerPublicKey, sp.TAddress)
-        sp.set_type(params._publicSignerHash, sp.TKey)
+        sp.set_type(params._publicSignerHash, sp.TAddress)
+        sp.set_type(params._signerPublicKey, sp.TKey)
         sp.set_type(params._sigS, sp.TSignature)
         
         _tokenId = params.tokenId
@@ -113,12 +113,12 @@ class Oracle(sp.Contract):
         _assetType = params._assetType
         _state = params._state
         _url = params._url
-        _signerPublicKey = params._signerPublicKey
         _publicSignerHash = params._publicSignerHash
+        _signerPublicKey = params._signerPublicKey
         _sigS = params._sigS
 
-        sp.verify(self._isWhitelisted(_publicSignerHash))
-        sp.verify(sp.check_signature(_publicSignerHash, _sigS,_hash),"verify hash: Invalid Signature")
+        sp.verify(self._isWhitelisted(_signerPublicKey))
+        sp.verify(sp.check_signature(_signerPublicKey, _sigS,_hash),"verify hash: Invalid Signature")
 
         sp.if self.data.signerAddress.contains(_toAlias):
             _to = self.data.signerAddress[_toAlias]
@@ -138,19 +138,19 @@ class Oracle(sp.Contract):
         sp.if _status.value == 2:
             sp.failwith("Already minted")
         sp.if _status.value == 1:
-            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(sp.pack(_publicSignerHash)):
-                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_publicSignerHash)] == False)
+            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(sp.pack(_signerPublicKey)):
+                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_signerPublicKey)] == False)
             sp.verify(self.data.tokenData[_tokenId][_hash].state == _state)
             sp.verify(self.data.tokenData[_tokenId][_hash].oracleContract == sp.self_address)
-            self.data.tokenData[_tokenId][_hash].authorities.add(sp.pack(_publicSignerHash))
-            self.data.tokenData[_tokenId][_hash].authoritiesAlias.add(self.data.signerAddressAlias[sp.pack(_publicSignerHash)])
-            self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_publicSignerHash)] = True
+            self.data.tokenData[_tokenId][_hash].authorities.add(sp.pack(_signerPublicKey))
+            self.data.tokenData[_tokenId][_hash].authoritiesAlias.add(self.data.signerAddressAlias[sp.pack(_signerPublicKey)])
+            self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_signerPublicKey)] = True
 
             self.data.tokenData[_tokenId][_hash].signatures_hashed.add(sp.pack(_sigS))
 
         sp.else:
-            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(sp.pack(_publicSignerHash)):
-                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_publicSignerHash)] == False)
+            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(sp.pack(_signerPublicKey)):
+                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][sp.pack(_signerPublicKey)] == False)
             self.data.tokenData[_tokenId] = sp.map(
                 {_hash: sp.record(oracleContract = sp.self_address,
                                   groupId = self.data.groupId, 
@@ -162,12 +162,12 @@ class Oracle(sp.Contract):
                                   issueDateTime = sp.now,
                                   url = _url,
                                   authoritiesAlias = sp.set([
-                                      self.data.signerAddressAlias[sp.pack(_publicSignerHash)]
+                                      self.data.signerAddressAlias[sp.pack(_signerPublicKey)]
                                       ]),
-                                  authorities = sp.set([sp.pack(_publicSignerHash)]),
+                                  authorities = sp.set([sp.pack(_signerPublicKey)]),
                                   signatures_hashed = sp.set([sp.pack(_sigS)]))
                  })
-            self.data.tokenAuthSings[_tokenId] = sp.map({_hash : sp.map({sp.pack(_publicSignerHash) : True})})
+            self.data.tokenAuthSings[_tokenId] = sp.map({_hash : sp.map({sp.pack(_signerPublicKey) : True})})
             self.data.tokenStatus[_tokenId] = sp.map({_hash : 1})
 
 

@@ -1,8 +1,9 @@
 const { ContractAbstraction } = require("@taquito/taquito");
 const { TezosRPC } = require("../tezos-rpc");
-const { logger } = require("../../logger");
 const { TezosMessageUtils } = require("conseiljs");
 const { hex2buf } = require("../../utils");
+const { verifyTokenIssuanceSignature } = require("../signatureVerifier");
+const { ValidationError } = require("../../errors");
 
 class LiveCopyNft {
   /**
@@ -22,47 +23,105 @@ class LiveCopyNft {
    */
   async getTokenData(tokenId) {
     const { tokenData } = await this.nftContract.storage();
-    let {
-      _hash,
-      assetType,
-      authorities,
-      groupId,
-      issueDateTime,
-      oracleContract,
-      signatures_hashed,
-      state,
-      to,
-      toAlias,
-      url,
-    } = await tokenData.get(tokenId);
+    const tokenDataList = await tokenData.get(tokenId);
 
-    // Convert from bytes to respective formats
-    _hash = "0x" + TezosMessageUtils.readPackedData(_hash, "bytes");
-    authorities = authorities.map((authority) =>
-      TezosMessageUtils.readPublicKey(
-        TezosMessageUtils.readPackedData(authority, "bytes")
-      )
-    );
-    signatures_hashed = signatures_hashed.map((signatureBytes) =>
-      TezosMessageUtils.readSignatureWithHint(
-        hex2buf(TezosMessageUtils.readPackedData(signatureBytes, "bytes")),
-        "edsig"
-      )
-    );
+    if (!tokenDataList) {
+      throw new ValidationError("TokenId not found");
+    }
+
+    const history = [];
+    for (const tokenData of tokenDataList) {
+      let {
+        _hash,
+        authorities,
+        issueDateTime,
+        oracleContract,
+        signatures_hashed,
+        state,
+        url,
+      } = tokenData;
+
+      // Get authority aliases corr. to authorities from contract
+      const groupOracleContract = await this.tezosRpc.getContractInstance(
+        oracleContract
+      );
+      const { signerAddressAlias } = await groupOracleContract.storage();
+      const authoritiesAliases = authorities.map((authority) =>
+        signerAddressAlias.get(authority)
+      );
+
+      // Convert signatures from bytes to readable `edsig` format
+      const signatures = signatures_hashed.map((signatureBytes) =>
+        TezosMessageUtils.readSignatureWithHint(
+          hex2buf(TezosMessageUtils.readPackedData(signatureBytes, "bytes")),
+          "edsig"
+        )
+      );
+
+      // Convert from bytes to pub key
+      authorities = authorities.map((authority) =>
+        TezosMessageUtils.readPublicKey(
+          TezosMessageUtils.readPackedData(authority, "bytes")
+        )
+      );
+
+      // Construct signature mapping
+      const signature_mapping = await this._constructSignatureMapping(
+        _hash,
+        authorities,
+        authoritiesAliases,
+        signatures
+      );
+
+      // Convert from bytes to respective formats
+      _hash = "0x" + TezosMessageUtils.readPackedData(_hash, "bytes");
+
+      history.push({
+        state,
+        hash: _hash,
+        url,
+        issueDateTime: issueDateTime,
+        signatures: signature_mapping,
+      });
+    }
 
     return {
-      ownerOrgId: groupId,
-      ownerAddr: to,
-      oracleContract,
-      groupId,
-      assetType,
-      state,
-      hash: _hash,
-      url,
-      issueDateTime,
-      signerPublicKeys: authorities,
-      signatures: signatures_hashed,
+      ownerAddr: tokenDataList[0].to,
+      ownerOrgId: tokenDataList[0].toAlias,
+      ownerOrgName: tokenDataList[0].toAlias,
+      oracleContract: tokenDataList[0].oracleContract,
+      groupId: tokenDataList[0].groupId,
+      assetType: tokenDataList[0].assetType,
+      history,
     };
+  }
+
+  // Map signatures to signer public keys and aliases
+  // 1. Loop through all signatures
+  // 2. Verify the signature publickey and update mapping
+  async _constructSignatureMapping(
+    docHash,
+    authorities,
+    authoritiesAliases,
+    signatures
+  ) {
+    const signatureMapping = {};
+
+    for (const sig of signatures) {
+      for (let i = 0; i < authorities.length; i++) {
+        const sigVerified = await verifyTokenIssuanceSignature(
+          docHash,
+          authorities[i],
+          sig
+        );
+        if (sigVerified) {
+          const alias = authoritiesAliases[i];
+          signatureMapping[alias] = sig;
+        }
+      }
+    }
+
+    return signatureMapping;
   }
 }
 

@@ -549,23 +549,25 @@ URL: http://127.0.0.1/livecopycert/
 ```js
 {
     "status": "success",
-    "code": "200",
+    "code": 200,
     "message": "Successfully queried the smart contract",
     "data": {
-        "ownerOrgId": "a0580b3ef10fb19aed20",
-        "ownerAddr": "tz1ZjRw4kN84oVvHZ31mTiTvCNR1JCXzKPbK",
-        "oracleContract": "KT1EuiwmKRnBQhWBPgb7c42K9vpSeQbMYGzD",
-        "groupId": "a0580b3ef10fb19aed20",
+        "ownerAddr": "tz1NkUo52fpE6NStRki7yE3M4VqWdLcQrxkR",
+        "ownerOrgId": "Eula",
+        "ownerOrgName": "Eula",
+        "oracleContract": "KT1NJYLV29QRq33jJuBk9o753J1Gv6ddu8m1",
+        "groupId": "Schroeder, Carroll and Kirlin",
         "assetType": "invoice",
-        "state": "CREATED",
-        "hash": "0x3b533dfcc9944a2d3b8b641bc6c8cd04365cac556d476fe2e8854ea521120de6",
-        "url": "http://marketsn.com/asset/IOC",
-        "issueDateTime": "2020-12-23T12:54:23.000Z",
-        "signerPublicKeys": [
-            "edpkvVm7sz3JKF3jctTFnRr4U36MMsHvGyUSRmu1TcbaiN5joh9KUW"
-        ],
-        "signatures": [
-            "edsigtu1CUAyXBatKYrJD9tcPBjMVmkZ3YYjfKZ7QuYunEF68yqVf9L9eM1KvwzSSh2r1JsLPUNuwJbkjc1VfKfL3XTMZSk4kd3"
+        "history": [
+            {
+                "state": "CREATED",
+                "hash": "0x3b533dfcc9944a2d3b8b641bc6c8cd04365cac556d476fe2e8854ea521120de6",
+                "url": "http://marketsn.com/asset/IOC",
+                "issueDateTime": "2021-01-08T12:23:01.000Z",
+                "signatures": {
+                    "Justice": "edsigu3KHPXVT6EAig4byT44xe2MgPXooiUssSjNKc2GCgBm1p5hxBNDY3Ccn6ruHdzWL5YzDyJPw93he4gmH9ZK5fpHi3yGSz9"
+                }
+            }
         ]
     }
 }

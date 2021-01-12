@@ -37,8 +37,8 @@ const NETWORK_CONFIG = {
       network: "delphinet",
     },
     contractAddresses: {
-      groupFactoryAddress: "KT18kr5MY1tKpvU3H7dS5PSFknJb8LJtR6AS",
-      nftAddress: "KT1UAQJ6XauawJvZdCvW6XvGnkraPZh3kjWa",
+      groupFactoryAddress: "KT1SwLaJvQcHcduX1nMEfKoDMAYVU9ipb59t",
+      nftAddress: "KT1X2uyKBAFnH7nU48AAqy1KncipwdubdCCB",
     },
     networkId: "NetXm8tYqnMWky1",
   },

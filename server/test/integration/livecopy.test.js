@@ -550,29 +550,40 @@ describe("Livecopy integration test", () => {
       const {
         ownerOrgId,
         ownerAddr,
+        ownerOrgName,
         oracleContract,
         groupId: groupIdFromApi,
         assetType,
-        state,
-        hash,
-        url,
-        issueDateTime,
-        signerPublicKeys,
-        signatures,
+        history,
       } = res.body.data;
-      expect(ownerOrgId).to.be.equals(groupId);
+      expect(ownerOrgId).to.be.equals(tokenRecepientAlias);
+      expect(ownerOrgName).to.be.equals(tokenRecepientAlias);
       expect(ownerAddr).to.be.equals(tokenRecepientAddress);
       expect(oracleContract).to.be.equals(groupInstanceAddress);
       expect(groupIdFromApi).to.be.equals(groupId);
       expect(assetType).to.be.equals("invoice");
+      expect(history).to.be.an("array");
+
+      const { state, hash, url, issueDateTime, signatures } = history[0];
       expect(state).to.be.equals("CREATED");
       expect(hash).to.be.a("string");
       expect(url).to.be.a("string");
-      expect(signerPublicKeys).to.be.an("array");
-      expect(signatures).to.be.an("array");
+      expect(signatures).to.be.an("object");
 
       const issueDate = new Date(issueDateTime);
       expect(issueDate instanceof Date).to.be.true;
+    });
+
+    it("should throw error on invalid tokenId", async function () {
+      const invalidTokenId = faker.random.number();
+
+      const res = await testSuite
+        .get(`/livecopycert/?TokenId=${invalidTokenId}`)
+        .set("Accept", "application/json")
+        .expect("Content-Type", /json/)
+        .expect(400);
+
+      assertBadRequestErrorMessage(res, "TokenId not found");
     });
   });
 });

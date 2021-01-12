@@ -96,6 +96,9 @@ class LiveCopyNft {
     };
   }
 
+  // Map signatures to signer public keys and aliases
+  // 1. Loop through all signatures
+  // 2. Verify the signature publickey and update mapping
   async _constructSignatureMapping(
     docHash,
     authorities,

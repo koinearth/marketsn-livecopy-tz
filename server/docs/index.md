@@ -533,6 +533,7 @@ URL: http://127.0.0.1/livecopycert/
 | Key     | Value  | Description |
 | ------- | ------ | ----------- |
 | TokenId | INV002 |             |
+| GroupId | IOCL   |             |
 
 **_More example Requests/Responses:_**
 
@@ -543,6 +544,7 @@ URL: http://127.0.0.1/livecopycert/
 | Key     | Value  | Description |
 | ------- | ------ | ----------- |
 | TokenId | INV002 |             |
+| GroupId | IOCL   |             |
 
 ##### I. Example Response: Get Cert - 200 OK
 

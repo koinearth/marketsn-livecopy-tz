@@ -45,14 +45,14 @@ const issueCert = async function (req, res) {
     }
 
     // TokenId validations
-    if (TokenId === null || TokenId === undefined) {
+    if (!TokenId) {
       return sendBadRequestErrMessage(
         res,
         "Missing parameter TokenId in request"
       );
     }
-    if (typeof TokenId !== "number") {
-      return sendBadRequestErrMessage(res, "TokenId should be a valid number");
+    if (typeof TokenId !== "string") {
+      return sendBadRequestErrMessage(res, "TokenId should be a valid string");
     }
 
     // Hash validations
@@ -151,7 +151,7 @@ const issueCert = async function (req, res) {
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
   try {
-    const { TokenId } = req.query;
+    const { TokenId, GroupId } = req.query;
     if (!TokenId) {
       return sendBadRequestErrMessage(
         res,
@@ -159,8 +159,19 @@ const getCert = async function (req, res) {
       );
     }
 
+    if (!GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter GroupId in request"
+      );
+    }
+
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
+    const internalTokenId = await livecopyGroup.getTokenId(TokenId);
+
     const livecopyNft = req.app.get("livecopyNft");
-    const tokenDetails = await livecopyNft.getTokenData(TokenId);
+    const tokenDetails = await livecopyNft.getTokenData(internalTokenId);
     return res.status(200).send({
       status: "success",
       code: 200,

@@ -151,6 +151,12 @@ class LiveCopyGroup {
       throw new ValidationError("Invalid signer public key");
     }
 
+    // Validate toAlias whitelisted or not
+    const toAddress = await this.getAddressOfAlias(issuedToAlias);
+    if (!toAddress) {
+      throw new ValidationError("To address not whitelisted");
+    }
+
     const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
       signerPublicKey,
       "edpk"
@@ -190,6 +196,12 @@ class LiveCopyGroup {
   async getGroupAdminPubKey() {
     const storageList = await this.groupContract.storage();
     return storageList.adminPublicKey;
+  }
+
+  async getAddressOfAlias(alias) {
+    const storageList = await this.groupContract.storage();
+    const { signerAddress } = storageList;
+    return signerAddress.get(alias);
   }
 }
 

@@ -38,6 +38,10 @@ describe("Livecopy integration test", () => {
     tokenRecepientPublicKey,
     tokenRecepientSecretKey,
     tokenRecepientAlias = faker.name.firstName();
+  let tokenRecepient2Address,
+    tokenRecepient2PublicKey,
+    tokenRecepient2SecretKey,
+    tokenRecepient2Alias = faker.name.firstName();
   let groupInstanceAddress;
 
   before(async () => {
@@ -68,6 +72,12 @@ describe("Livecopy integration test", () => {
     tokenRecepientAddress = tokenRecepientKp.address;
     tokenRecepientPublicKey = tokenRecepientKp.publicKey;
     tokenRecepientSecretKey = tokenRecepientKp.secretKey;
+
+    // Token recepient2 keypair
+    const tokenRecepient2Kp = await generateKeyPair();
+    tokenRecepient2Address = tokenRecepient2Kp.address;
+    tokenRecepient2PublicKey = tokenRecepient2Kp.publicKey;
+    tokenRecepient2SecretKey = tokenRecepient2Kp.secretKey;
   });
 
   after(async () => {
@@ -449,6 +459,47 @@ describe("Livecopy integration test", () => {
         res.body.data.transactionHash
       );
     });
+
+    it("should whitelist token receiver2 in the group with status 200", async function () {
+      // Create group admin signature
+      const timestamp = Date.now();
+      const message = packDataForWhitelistAddressUpdation(
+        tokenRecepient2Address,
+        tokenRecepient2PublicKey,
+        tokenRecepient2Alias,
+        timestamp
+      );
+      const groupAdminSignature = await sign(
+        createBlake2bhash(message),
+        groupAdminSecretKey
+      );
+
+      const res = await testSuite
+        .post(`/livecopyadmin/group/signer`)
+        .send({
+          GroupId: groupId,
+          SignerAccount: tokenRecepient2PublicKey,
+          SignerName: tokenRecepient2Alias,
+          AdminSignature: groupAdminSignature,
+          AdminPublicKey: groupAdminPublicKey,
+          Timestamp: timestamp,
+        })
+        .set("Accept", "application/json")
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      expect(res).to.have.property("body");
+      expect(res.body).to.have.property("code", 200);
+      expect(res.body).to.have.property("status", "success");
+      expect(res.body).to.have.property("data");
+      expect(res.body.data).to.have.property("transactionHash");
+      expect(res.body.data.transactionHash).to.be.a("string");
+
+      await waitForRequestToBeProcessed(
+        testSuite,
+        res.body.data.transactionHash
+      );
+    });
   });
 
   /**
@@ -529,6 +580,23 @@ describe("Livecopy integration test", () => {
 
       assertBadRequestErrorMessage(res, "Invalid signature");
     });
+
+    it("should throw error if to address is not whitelisted", async function () {
+      const signature = await sign(packString(hash), signerSecretKey);
+
+      // TODO:
+      issueTokenRequest.TokenOwner = faker.name.firstName();
+      issueTokenRequest.signature = signature;
+
+      const res = await testSuite
+        .post(`/livecopycert`)
+        .send(issueTokenRequest)
+        .set("Accept", "application/json")
+        .expect("Content-Type", /json/)
+        .expect(400);
+
+      assertBadRequestErrorMessage(res, "To address not whitelisted");
+    });
   });
 
   /**
@@ -584,6 +652,60 @@ describe("Livecopy integration test", () => {
         .expect(400);
 
       assertBadRequestErrorMessage(res, "TokenId not found");
+    });
+  });
+
+  /**
+   * -----------------------------------------------------------------
+   * -----------------------------------------------------------------
+   *                    UPDATE NFT TEST CASES
+   * -----------------------------------------------------------------
+   */
+  describe("update nft", function () {
+    let updateTokenRequest;
+
+    const hash =
+      "45f1bd9ec4a7214332c02d044c48e08a2ebc7e7718dcff8ac7a3ab1c1716b961";
+    const assetType = "letter-of-credit";
+    const assetUrl = "http://marketsn.com/asset/IOC";
+    const tokenState = "UPDATED";
+
+    before(async () => {
+      // Create whitelisted acct. signature
+      const signature = await sign(packString(hash), tokenRecepientSecretKey);
+
+      updateTokenRequest = {
+        GroupId: groupId,
+        TokenOwner: tokenRecepient2Alias,
+        TokenId: tokenId,
+        Hash: packString(hash),
+        SignerPublicKey: tokenRecepientPublicKey,
+        Signature: signature,
+        State: tokenState,
+        AssetType: assetType,
+        URL: assetUrl,
+      };
+    });
+
+    it("should update already issued nft to the group with status 200", async function () {
+      const res = await testSuite
+        .post(`/livecopycert`)
+        .send(updateTokenRequest)
+        .set("Accept", "application/json")
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      expect(res).to.have.property("body");
+      expect(res.body).to.have.property("code", 200);
+      expect(res.body).to.have.property("status", "success");
+      expect(res.body).to.have.property("data");
+      expect(res.body.data).to.have.property("transactionHash");
+      expect(res.body.data.transactionHash).to.be.a("string");
+
+      await waitForRequestToBeProcessed(
+        testSuite,
+        res.body.data.transactionHash
+      );
     });
   });
 });

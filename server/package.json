@@ -9,7 +9,7 @@
     "start": "node ./src/index.js",
     "test": "npm run test:unit && npm run test:integration",
     "test:unit": "mocha --recursive --timeout 40000 --exit test/unit/**/*.js",
-    "test:integration": "mocha --recursive --timeout 150000 --exit test/integration/**/*.js"
+    "test:integration": "mocha --recursive --timeout 150000 --retries 2 --exit test/integration/**/*.js"
   },
   "dependencies": {
     "@taquito/signer": "^7.0.0-beta.0",

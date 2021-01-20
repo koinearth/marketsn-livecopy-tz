@@ -1,3 +1,4 @@
+const { Types } = require("mongoose");
 const { transactionsModel } = require("../../models/transactions/schema");
 const { handleError, sendBadRequestErrMessage } = require("../helper");
 
@@ -14,7 +15,7 @@ const transactionStatus = async function (req, res) {
     }
 
     const txnRecord = await transactionsModel.findOne(
-      { transactionHash },
+      { _id: Types.ObjectId(transactionHash) },
       { status: 1 }
     );
     if (!txnRecord) {

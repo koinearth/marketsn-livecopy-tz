@@ -520,6 +520,8 @@ URL: http://127.0.0.1/livecopycert/
 
 View details of an LiveCopy NFT issued on Blockchain
 
+Provide either `TokenId` or a combination of `TokenSymbol` + `GroupId` to query tokendata.
+
 **_Endpoint:_**
 
 ```bash
@@ -530,10 +532,16 @@ URL: http://127.0.0.1/livecopycert/
 
 **_Query params:_**
 
-| Key     | Value  | Description |
-| ------- | ------ | ----------- |
-| TokenId | INV002 |             |
-| GroupId | IOCL   |             |
+| Key         | Value  | Description |
+| ----------- | ------ | ----------- |
+| TokenSymbol | INV002 |             |
+| GroupId     | IOCL   |             |
+
+or
+
+| Key     | Value | Description |
+| ------- | ----- | ----------- |
+| TokenId | 3     |             |
 
 **_More example Requests/Responses:_**
 
@@ -550,28 +558,39 @@ URL: http://127.0.0.1/livecopycert/
 
 ```js
 {
-    "status": "success",
-    "code": 200,
-    "message": "Successfully queried the smart contract",
-    "data": {
-        "ownerAddr": "tz1NkUo52fpE6NStRki7yE3M4VqWdLcQrxkR",
-        "ownerOrgId": "Eula",
-        "ownerOrgName": "Eula",
-        "oracleContract": "KT1NJYLV29QRq33jJuBk9o753J1Gv6ddu8m1",
-        "groupId": "Schroeder, Carroll and Kirlin",
-        "assetType": "invoice",
-        "history": [
-            {
-                "state": "CREATED",
-                "hash": "0x3b533dfcc9944a2d3b8b641bc6c8cd04365cac556d476fe2e8854ea521120de6",
-                "url": "http://marketsn.com/asset/IOC",
-                "issueDateTime": "2021-01-08T12:23:01.000Z",
-                "signatures": {
-                    "Justice": "edsigu3KHPXVT6EAig4byT44xe2MgPXooiUssSjNKc2GCgBm1p5hxBNDY3Ccn6ruHdzWL5YzDyJPw93he4gmH9ZK5fpHi3yGSz9"
-                }
-            }
-        ]
-    }
+  "status": "success",
+  "code": 200,
+  "message": "Successfully queried the smart contract",
+  "data": {
+    "ownerAddr": "tz1PLUjbs3HJnHd6ZPwW3Z7UK1CDUo1qT5bd",
+    "ownerOrgId": "Buck",
+    "ownerOrgName": "Buck",
+    "oracleContract": "KT1GDGzhfbjURPcQHw2pnBKxDoG55gCiYTsz",
+    "groupId": "IOC",
+    "assetType": "letter-of-credit",
+    "history": [
+      {
+        "state": "UPDATED",
+        "hash": "0x45f1bd9ec4a7214332c02d044c48e08a2ebc7e7718dcff8ac7a3ab1c1716b961",
+        "url": "http://marketsn.com/asset/IOC",
+        "issueDateTime": "2021-01-16T19:22:17.000Z",
+        "signatures": {
+          "Mason": "edsigu6qF7ZrNg4yxDNiFoEgpKZwcBdtV1nhWfy61bLQuKcnDg29yjxpePKqufbUAi4LswoME9zvSKQNEwfDQMgC5t2bUf9ro6a"
+        }
+      },
+      {
+        "state": "CREATED",
+        "hash": "0x3b533dfcc9944a2d3b8b641bc6c8cd04365cac556d476fe2e8854ea521120de6",
+        "url": "http://marketsn.com/asset/IOC",
+        "issueDateTime": "2021-01-16T19:20:47.000Z",
+        "signatures": {
+          "Richard": "edsigtZysBMB8FJ36NU4J9Th7UxoApfeBfg2B9HWaD3SfDiYUTrCtc2B4gzfiTz5T9CBv6NuyadRZt9L98e9Ri8tz452muKUdGu"
+        }
+      }
+    ],
+    "tokenId": "3",
+    "tokenSymbol": "INV002"
+  }
 }
 ```
 

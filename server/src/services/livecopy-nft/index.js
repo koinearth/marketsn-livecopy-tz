@@ -17,7 +17,7 @@ class LiveCopyNft {
 
   /**
    * Returns token data from a tokenId
-   * @param {string} tokenId
+   * @param {number} tokenId
    *
    * @returns {object}
    */

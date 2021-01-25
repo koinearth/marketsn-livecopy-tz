@@ -26,7 +26,7 @@ describe("Livecopy integration test", () => {
       "edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2",
     groupId = faker.company.companyName(),
     minSignaturesReqd = 1,
-    tokenId = faker.random.number();
+    tokenId = faker.random.word();
 
   let mongoConnection;
   let groupAdminAddress, groupAdminPublicKey, groupAdminSecretKey;
@@ -556,7 +556,7 @@ describe("Livecopy integration test", () => {
     });
 
     it("should throw error on invalid signature", async function () {
-      const tokenId = faker.random.number();
+      const tokenId = faker.random.word();
       const signature = faker.random.hexaDecimal(32);
 
       const requestWithInvalidSignature = {
@@ -584,7 +584,6 @@ describe("Livecopy integration test", () => {
     it("should throw error if to address is not whitelisted", async function () {
       const signature = await sign(packString(hash), signerSecretKey);
 
-      // TODO:
       issueTokenRequest.TokenOwner = faker.name.firstName();
       issueTokenRequest.signature = signature;
 
@@ -608,7 +607,7 @@ describe("Livecopy integration test", () => {
   describe("fetch nft details test cases", function () {
     it("should get nft details with status 200", async function () {
       const res = await testSuite
-        .get(`/livecopycert/?TokenId=${tokenId}`)
+        .get(`/livecopycert/?TokenId=${tokenId}&GroupId=${groupId}`)
         .set("Accept", "application/json")
         .expect("Content-Type", /json/)
         .expect(200);
@@ -646,7 +645,7 @@ describe("Livecopy integration test", () => {
       const invalidTokenId = faker.random.number();
 
       const res = await testSuite
-        .get(`/livecopycert/?TokenId=${invalidTokenId}`)
+        .get(`/livecopycert/?TokenId=${invalidTokenId}&GroupId=${groupId}`)
         .set("Accept", "application/json")
         .expect("Content-Type", /json/)
         .expect(400);

@@ -124,6 +124,23 @@ class LiveCopyGroup {
   }
 
   /**
+   * Return the id corresponding to a string tokenSymbol
+   * @param {string} tokenSymbol
+   * 
+   * @returns {string}
+   */
+  async getTokenId(tokenSymbol) {
+    const { tokensIssued } = await this.groupContract.storage();
+
+    const tokenId = await tokensIssued.get(tokenSymbol);
+    if (tokenId === null || tokenId === undefined) {
+      throw new ValidationError("TokenId not found");
+    }
+
+    return tokenId.toString();
+  }
+
+  /**
    * Issue an NFT Cert
    *
    * @param {number} tokenId
@@ -176,13 +193,13 @@ class LiveCopyGroup {
     const issueCertificateMethod = this.groupContract.methods["issueCert"](
       assetType,
       documentHash,
-      signerPublicKey,
-      signature,
       signerAddress,
+      signature,
+      signerPublicKey,
       state,
       issuedToAlias,
-      documentUrl,
-      tokenId
+      tokenId,
+      documentUrl
     );
     const transferParams = issueCertificateMethod.toTransferParams();
     const transactionHash = await this.relayer.sendContractInvocation(

@@ -607,7 +607,7 @@ describe("Livecopy integration test", () => {
   describe("fetch nft details test cases", function () {
     it("should get nft details with status 200", async function () {
       const res = await testSuite
-        .get(`/livecopycert/?TokenId=${tokenId}&GroupId=${groupId}`)
+        .get(`/livecopycert/?TokenSymbol=${tokenId}&GroupId=${groupId}`)
         .set("Accept", "application/json")
         .expect("Content-Type", /json/)
         .expect(200);
@@ -645,7 +645,7 @@ describe("Livecopy integration test", () => {
       const invalidTokenId = faker.random.number();
 
       const res = await testSuite
-        .get(`/livecopycert/?TokenId=${invalidTokenId}&GroupId=${groupId}`)
+        .get(`/livecopycert/?TokenSymbol=${invalidTokenId}&GroupId=${groupId}`)
         .set("Accept", "application/json")
         .expect("Content-Type", /json/)
         .expect(400);
@@ -724,7 +724,7 @@ describe("Livecopy integration test", () => {
     before(async () => {
       for (let i = 0; i < 10; i++) {
         const hash = faker.random.hexaDecimal(64);
-        const tokenId = faker.random.number();
+        const tokenId = faker.random.word();
         // Create whitelisted acct. signature
         const signature = await sign(packString(hash), signerSecretKey);
 

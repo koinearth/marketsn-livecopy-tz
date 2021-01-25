@@ -151,27 +151,42 @@ const issueCert = async function (req, res) {
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
   try {
-    const { TokenId, GroupId } = req.query;
+    let { TokenId, TokenSymbol, GroupId } = req.query;
+
+    if (!TokenId && !TokenSymbol && !GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Should provide either of TokenId or (TokenSymbol and GroupId)"
+      );
+    }
+
+    // TokenId null
+    // 1. Retrieve the tokenId using groupId and symbol
+    // 2. Fetch the details using the tokenId
     if (!TokenId) {
-      return sendBadRequestErrMessage(
-        res,
-        "Missing parameter TokenId in request"
+      if (!TokenSymbol) {
+        return sendBadRequestErrMessage(
+          res,
+          "Missing parameter TokenSymbol in request"
+        );
+      }
+
+      if (!GroupId) {
+        return sendBadRequestErrMessage(
+          res,
+          "Missing parameter GroupId in request"
+        );
+      }
+      const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+      const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
+        GroupId
       );
+      TokenId = await livecopyGroup.getTokenId(TokenSymbol);
     }
 
-    if (!GroupId) {
-      return sendBadRequestErrMessage(
-        res,
-        "Missing parameter GroupId in request"
-      );
-    }
-
-    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
-    const internalTokenId = await livecopyGroup.getTokenId(TokenId);
-
+    // Retrieve details using TokenId
     const livecopyNft = req.app.get("livecopyNft");
-    const tokenDetails = await livecopyNft.getTokenData(internalTokenId);
+    const tokenDetails = await livecopyNft.getTokenData(TokenId);
     return res.status(200).send({
       status: "success",
       code: 200,

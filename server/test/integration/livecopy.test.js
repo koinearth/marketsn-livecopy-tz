@@ -707,6 +707,61 @@ describe("Livecopy integration test", () => {
       );
     });
   });
+
+  /**
+   * -----------------------------------------------------------------
+   * -----------------------------------------------------------------
+   *                    BATCH TEST ISSUE NFT
+   * -----------------------------------------------------------------
+   */
+  describe("test issue of 10 nfts", function () {
+    let issueTokenRequests = [];
+
+    const assetType = "invoice";
+    const assetUrl = "http://marketsn.com/asset/IOC";
+    const tokenState = "CREATED";
+
+    before(async () => {
+      for (let i = 0; i < 10; i++) {
+        const hash = faker.random.hexaDecimal(64);
+        const tokenId = faker.random.number();
+        // Create whitelisted acct. signature
+        const signature = await sign(packString(hash), signerSecretKey);
+
+        issueTokenRequests.push({
+          GroupId: groupId,
+          TokenOwner: tokenRecepientAlias,
+          TokenId: tokenId,
+          Hash: packString(hash),
+          SignerPublicKey: signerPublicKey,
+          Signature: signature,
+          State: tokenState,
+          AssetType: assetType,
+          URL: assetUrl,
+        });
+      }
+    });
+
+    it("should issue nft to the group with status 200", async function () {
+      const issueNftPromises = issueTokenRequests.map((issueTokenRequest) => {
+        return testSuite
+          .post(`/livecopycert`)
+          .send(issueTokenRequest)
+          .set("Accept", "application/json")
+          .expect("Content-Type", /json/)
+          .expect(200);
+      });
+      const res = await Promise.all(issueNftPromises);
+
+      const operationIds = res.map((each) => each.body.data.transactionHash);
+
+      const txnConfirmationPromises = operationIds.map((opId) => {
+        return waitForRequestToBeProcessed(testSuite, opId);
+      });
+
+      await Promise.all(txnConfirmationPromises);
+    });
+  });
 });
 
 /**

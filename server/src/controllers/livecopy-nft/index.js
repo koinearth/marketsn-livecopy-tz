@@ -136,7 +136,7 @@ const issueCert = async function (req, res) {
       Signature
     );
 
-    logger.info("Issue cert txn hash:", transactionHash);
+    logger.info("Issue cert operation id:", transactionHash);
     return res.status(200).send({
       status: "success",
       code: 200,

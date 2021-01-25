@@ -4,13 +4,10 @@ const { Schema } = mongoose;
 const transactionSchema = new Schema({
   transactionHash: {
     type: String,
-    required: true,
-    createIndex: { unique: true },
   },
   networkId: { type: String },
   relayerAddress: {
     type: String,
-    required: true,
   },
   status: {
     type: String,
@@ -21,11 +18,9 @@ const transactionSchema = new Schema({
   // Helps in determining if the transaction is `lost` or `skipped`
   blockLevelAtBroadcast: {
     type: Number,
-    required: true,
   },
   blockHashAtBroadcast: {
     type: String,
-    required: true,
   },
 });
 

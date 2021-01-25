@@ -144,7 +144,7 @@ const createGroup = async function (req, res) {
       LivecopyAdminSignature
     );
 
-    logger.info("Group instance creation txn hash:", transactionHash);
+    logger.info("Group instance creation operation id:", transactionHash);
     return res.status(200).send({
       status: "success",
       code: 200,
@@ -300,7 +300,7 @@ const addSignerToGroup = async function (req, res) {
       Timestamp
     );
 
-    logger.info("Add whitelistist acct. txn hash:", transactionHash);
+    logger.info("Add whitelistist acct. operation id:", transactionHash);
     return res.status(200).send({
       status: "success",
       code: 200,

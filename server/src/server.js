@@ -16,8 +16,6 @@ const { TezosRPC } = require("./services/tezos-rpc");
 const { initializeRelayers } = require("./services/relayer");
 const { initializeLiveCopyGroupFactory } = require("./services/livecopy-group");
 const { initializeLiveCopyNft } = require("./services/livecopy-nft");
-const { TransactionMonitor } = require("./services/relayer/transactionMonitor");
-const { startTransactionMonitor } = require("./cron");
 
 async function initialize() {
   const rpc = new TezosRPC(
@@ -42,9 +40,6 @@ async function initialize() {
     config.contractAddresses.nftAddress,
     relayer
   );
-
-  const transactionMonitor = new TransactionMonitor(rpc, config.conseilServer);
-  startTransactionMonitor(transactionMonitor);
 
   return {
     livecopyGroupFactory,

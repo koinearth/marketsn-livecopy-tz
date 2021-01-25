@@ -4,6 +4,13 @@ const { transactionsModel } = require("../../models/transactions/schema");
 const { config } = require("../../config");
 const { logger } = require("../../logger");
 const { TransactionError } = require("../../errors");
+const { Types } = require("mongoose");
+const { Wallet, Context } = require("@taquito/taquito");
+const { InMemorySigner } = require("@taquito/signer");
+const {
+  MAX_GAS_LIMIT,
+  MAX_STORAGE_LIMIT_IN_BYTES,
+} = require("../../constants");
 
 class Relayer {
   /**
@@ -14,6 +21,11 @@ class Relayer {
   constructor(tezosRpc, relayerAccounts) {
     this.tezosRpc = tezosRpc;
     this.availableAccounts = relayerAccounts;
+
+    this.availableGasLimit = MAX_GAS_LIMIT;
+    this.availableStorageLimit = MAX_STORAGE_LIMIT_IN_BYTES;
+    this.operations = [];
+    this.batchTimeout = 30_000 / this.availableAccounts.length;
   }
 
   _chooseRelayer() {
@@ -24,7 +36,7 @@ class Relayer {
 
   _addBackRelayer(account) {
     if (this.availableAccounts.indexOf(account) > -1) {
-      logger.log("Relayer already present in queue");
+      logger.error("Relayer already present in queue");
       return;
     }
 
@@ -41,6 +53,52 @@ class Relayer {
    * @param {Object} transferParams
    */
   async sendContractInvocation(transferParams) {
+    const {
+      error,
+      storageCost,
+      gasCost,
+    } = await this.tezosRpc.testContractInvocation(
+      this.availableAccounts[0].secretKey,
+      transferParams
+    );
+
+    // Errored, throw back err, add relayer as available and return
+    if (error) {
+      throw new TransactionError(error);
+    }
+
+    // Check gas, storage limits
+    if (
+      storageCost > this.availableStorageLimit ||
+      gasCost > this.availableGasLimit
+    ) {
+      throw new TransactionError("Cannot process transaction; Try again later");
+    }
+
+    // Schedule batch
+    if (this.operations.length === 0) {
+      setTimeout(this.sendOperationsBatch.bind(this), this.batchTimeout);
+    }
+
+    // Queue operation
+    const id = Types.ObjectId();
+    this.operations.push({
+      id,
+      transferParams,
+    });
+
+    // Success, save txn details to db with status as pending
+    const transaction = new transactionsModel({
+      _id: id,
+      networkId: config.networkId,
+      status: "pending",
+    });
+    transaction.save();
+
+    return id;
+  }
+
+  async sendOperationsBatch() {
     const relayer = this._chooseRelayer();
     if (!relayer) {
       throw new Error(
@@ -49,32 +107,64 @@ class Relayer {
       );
     }
 
-    const {
-      error,
-      operationHash,
-      level,
-      blockHash,
-    } = await this.tezosRpc.invokeContract(relayer.secretKey, transferParams);
+    const operationsToSend = Object.assign([], this.operations);
+    this.operations = [];
 
-    // Errored, throw back err, add relayer as available and return
-    if (error || !operationHash) {
-      this._addBackRelayer(relayer);
-      throw new TransactionError(error);
+    const context = new Context(
+      this.tezosRpc.rpcURL,
+      new InMemorySigner(relayer.secretKey)
+    );
+    const wallet = new Wallet(context);
+    const batch = wallet.batch([]);
+
+    try {
+      operationsToSend.forEach((op) => {
+        batch.withTransfer(op.transferParams);
+      });
+      const op = await batch.send();
+      const { opHash } = op;
+      logger.info(`Transaction hash: ${opHash}`);
+      await this._updateTransactionHash(operationsToSend, opHash);
+
+      await op.confirmation();
+      await this._updateTransactionStatus(operationsToSend, "success");
+    } catch (error) {
+      await this._updateTransactionStatus(operationsToSend, "failed");
     }
 
-    // Success, save txn details to db with status as pending
-    const transaction = new transactionsModel({
-      transactionHash: operationHash,
-      relayerAddress: relayer.address,
-      networkId: config.networkId,
-      blockLevelAtBroadcast: level,
-      blockHashAtBroadcast: blockHash,
-      status: "pending",
-    });
-    transaction.save();
-
     this._addBackRelayer(relayer);
-    return operationHash;
+  }
+
+  async _updateTransactionHash(operations, opHash) {
+    let dbOps = operations.map((op) => {
+      return {
+        updateOne: {
+          filter: {
+            _id: Types.ObjectId(op.id),
+          },
+          update: {
+            transactionHash: opHash,
+          },
+        },
+      };
+    });
+    await transactionsModel.bulkWrite(dbOps);
+  }
+
+  async _updateTransactionStatus(operations, status) {
+    let dbOps = operations.map((op) => {
+      return {
+        updateOne: {
+          filter: {
+            _id: Types.ObjectId(op.id),
+          },
+          update: {
+            status,
+          },
+        },
+      };
+    });
+    await transactionsModel.bulkWrite(dbOps);
   }
 }
 

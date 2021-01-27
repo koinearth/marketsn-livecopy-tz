@@ -22,12 +22,14 @@ class LiveCopyNft {
    * @returns {object}
    */
   async getTokenData(tokenId) {
-    const { tokenData } = await this.nftContract.storage();
+    const { tokenData, tokens } = await this.nftContract.storage();
     const tokenDataList = await tokenData.get(tokenId);
 
     if (!tokenDataList) {
       throw new ValidationError("TokenId not found");
     }
+
+    const tokenSymbol = (await tokens.get(tokenId)).symbol;
 
     const history = [];
     for (const tokenData of tokenDataList) {
@@ -93,6 +95,8 @@ class LiveCopyNft {
       groupId: tokenDataList[0].groupId,
       assetType: tokenDataList[0].assetType,
       history,
+      tokenId,
+      tokenSymbol,
     };
   }
 

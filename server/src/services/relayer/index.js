@@ -5,7 +5,12 @@ const { config } = require("../../config");
 const { logger } = require("../../logger");
 const { TransactionError } = require("../../errors");
 const { Types } = require("mongoose");
-const { Wallet, Context } = require("@taquito/taquito");
+const {
+  Wallet,
+  Context,
+  TezosOperationError,
+  OpKind,
+} = require("@taquito/taquito");
 const { InMemorySigner } = require("@taquito/signer");
 const {
   MAX_GAS_LIMIT,
@@ -25,7 +30,7 @@ class Relayer {
     this.availableGasLimit = MAX_GAS_LIMIT;
     this.availableStorageLimit = MAX_STORAGE_LIMIT_IN_BYTES;
     this.operations = [];
-    this.batchTimeout = 30_000 / this.availableAccounts.length;
+    this.batchTimeout = 30000 / this.availableAccounts.length;
   }
 
   _chooseRelayer() {
@@ -82,6 +87,7 @@ class Relayer {
 
     // Queue operation
     const id = Types.ObjectId();
+    transferParams.kind = OpKind.TRANSACTION;
     this.operations.push({
       id,
       transferParams,
@@ -117,30 +123,52 @@ class Relayer {
     const wallet = new Wallet(context);
     const batch = wallet.batch([]);
 
+    // Dry run transactions in batch and
+    // record failure in db, if any
+    const ids = [];
+    for (let i = 1; i <= operationsToSend.length; i++) {
+      const currOp = operationsToSend[i - 1];
+      try {
+        await context.estimate.batch([
+          ...batch.operations,
+          currOp.transferParams,
+        ]);
+        batch.withTransfer(currOp.transferParams);
+        ids.push(currOp.id);
+      } catch (error) {
+        const errorMessage = error.message || error.id;
+        logger.error(`ID: ${currOp.id} failed with error: ${errorMessage}`);
+        await this._updateTransactionStatus([currOp.id], "failed", errorMessage);
+      }
+    }
+
     try {
-      operationsToSend.forEach((op) => {
-        batch.withTransfer(op.transferParams);
-      });
       const op = await batch.send();
       const { opHash } = op;
       logger.info(`Transaction hash: ${opHash}`);
-      await this._updateTransactionHash(operationsToSend, opHash);
+      await this._updateTransactionHash(ids, opHash);
 
       await op.confirmation();
-      await this._updateTransactionStatus(operationsToSend, "success");
+      await this._updateTransactionStatus(ids, "success");
     } catch (error) {
+      if (error instanceof TezosOperationError) {
+        logger.error(error.message);
+      } else {
+        logger.error(error);
+      }
+
       await this._updateTransactionStatus(operationsToSend, "failed");
     }
 
     this._addBackRelayer(relayer);
   }
 
-  async _updateTransactionHash(operations, opHash) {
-    let dbOps = operations.map((op) => {
+  async _updateTransactionHash(ids, opHash) {
+    let dbOps = ids.map((id) => {
       return {
         updateOne: {
           filter: {
-            _id: Types.ObjectId(op.id),
+            _id: Types.ObjectId(id),
           },
           update: {
             transactionHash: opHash,
@@ -151,15 +179,16 @@ class Relayer {
     await transactionsModel.bulkWrite(dbOps);
   }
 
-  async _updateTransactionStatus(operations, status) {
-    let dbOps = operations.map((op) => {
+  async _updateTransactionStatus(ids, status, error = "") {
+    let dbOps = ids.map((id) => {
       return {
         updateOne: {
           filter: {
-            _id: Types.ObjectId(op.id),
+            _id: Types.ObjectId(id),
           },
           update: {
             status,
+            error,
           },
         },
       };

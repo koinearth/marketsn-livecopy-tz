@@ -16,7 +16,7 @@ const transactionStatus = async function (req, res) {
 
     const txnRecord = await transactionsModel.findOne(
       { _id: Types.ObjectId(transactionHash) },
-      { status: 1 }
+      { status: 1, error: 1 }
     );
     if (!txnRecord) {
       return res.status(420).send({
@@ -33,6 +33,7 @@ const transactionStatus = async function (req, res) {
       message: "Successfully queried the transaction status",
       data: {
         status: txnRecord.status,
+        error: txnRecord.error,
       },
     });
   } catch (err) {

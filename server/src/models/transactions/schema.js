@@ -14,6 +14,9 @@ const transactionSchema = new Schema({
     enum: ["pending", "failed", "success"],
     default: "pending",
   },
+  error: {
+    type: String,
+  },
   // Level at which the transaction was added to mempool
   // Helps in determining if the transaction is `lost` or `skipped`
   blockLevelAtBroadcast: {

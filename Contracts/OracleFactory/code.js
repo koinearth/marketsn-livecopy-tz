@@ -1101,14 +1101,6 @@ export default [
                                           []
                                         ]
                                       },
-                                      { "prim": "DUP" },
-                                      { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "2" } ] },
-                                      { "prim": "COMPARE" },
-                                      { "prim": "EQ" },
-                                      {
-                                        "prim": "IF",
-                                        "args": [ [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "Already minted" } ] }, { "prim": "FAILWITH" } ], [] ]
-                                      },
                                       { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "1" } ] },
                                       { "prim": "COMPARE" },
                                       { "prim": "EQ" },
@@ -3778,4 +3770,4 @@ export default [
       ]
     ]
   }
-];
+]

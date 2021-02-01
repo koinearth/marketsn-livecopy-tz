@@ -144,8 +144,9 @@ class Oracle(sp.Contract):
         sp.if self.data.tokenStatus.contains(_tokenSymbol) & self.data.tokenStatus[_tokenSymbol].contains(_hash):
             _status.value = self.data.tokenStatus[_tokenSymbol][_hash]
 
-        sp.if _status.value == 2:
-            sp.failwith("Already minted")
+        # Update on already mint
+        # sp.if _status.value == 2:
+        #     sp.failwith("Already minted")
 
         sp.if _status.value == 1:
             sp.if self.data.tokenAuthSings.contains(_tokenSymbol) & self.data.tokenAuthSings[_tokenSymbol].contains(_hash) & self.data.tokenAuthSings[_tokenSymbol][_hash].contains(sp.pack(_signerPublicKey)):

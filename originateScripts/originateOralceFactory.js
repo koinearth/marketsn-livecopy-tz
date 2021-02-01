@@ -1,5 +1,7 @@
-import {TezosToolkit, TezosOperationError} from '@taquito/taquito';
+import {TezosOperationError, TezosToolkit} from '@taquito/taquito';
+
 import { InMemorySigner } from '@taquito/signer'
+import conf from '../conf/conf.js';
 import oracleCodeJSON from '../Contracts/OracleFactory/code.js';
 import oracleStorageJSON from '../Contracts/OracleFactory/storage';
 

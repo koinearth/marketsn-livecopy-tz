@@ -582,8 +582,9 @@ class FA2_pause(FA2_core):
 class FA2_mint(FA2_core):
     @sp.entry_point
     def mint(self, params):
-        
-        _token_id = params.token_id
+        self.data.tokenCount += 1
+
+        _token_id = self.data.tokenCount
         _amount = params.amount
         _address = params.address
         _symbol = params.symbol
@@ -599,7 +600,7 @@ class FA2_mint(FA2_core):
         _authoritiesAlias = params.authoritiesAlias
         _authorities = params.authorities
         _signatures_hashed = params.signatures_hashed
-        
+
         sp.verify(self._isWhitelistAdmin(sp.sender))
         # We don't check for pauseness because we're the admin.
         if self.config.single_asset:
@@ -610,34 +611,94 @@ class FA2_mint(FA2_core):
                                                    _token_id),
                       "NFT-asset: cannot mint twice same token")
         user = self.ledger_key.make(_address, _token_id)
-        self.token_id_set.add(self.data.all_tokens, _token_id)
-        sp.if self.data.ledger.contains(user):
-            self.data.ledger[user].balance += _amount
+        sp.if ~self.token_id_set.contains(self.data.all_tokens, _token_id):
+            self.token_id_set.add(self.data.all_tokens, _token_id)
+        sp.if self.data.ledger.contains(user) & ~self.data.tokens.contains(_token_id):
+            sp.if ~self.data.tokens.contains(_token_id):
+                self.data.ledger[user].balance += _amount
         sp.else:
             self.data.ledger[user] = Ledger_value.make(_amount)
-        sp.if self.data.tokens.contains(_token_id):
-             pass
+
+        # Inform oracle contract of the tokenId created
+        c = sp.contract(sp.TRecord(tokenId=sp.TNat, tokenSymbol=sp.TString),
+                        address=_oracleContract, entry_point="updateTokenId").open_some()
+        content = sp.record(tokenId=_token_id, tokenSymbol=_symbol)
+        sp.transfer(content, sp.mutez(0), c)
+
+        # Update the tokenData against the tokenId
+        self.data.tokens[_token_id] = sp.record(
+            token_id=_token_id,
+            symbol=_symbol,
+            name="",  # Consered useless here
+            decimals=0,
+            extras=sp.map()
+        )
+        self.data.tokenData[_token_id] = [
+            sp.record(oracleContract=_oracleContract,
+                      groupId=_groupId,
+                      to=_to,
+                      toAlias=_toAlias,
+                      assetType=_assetType,
+                      state=_state,
+                      _hash=_hash,
+                      issueDateTime=_issueDateTime,
+                      url=_url,
+                      authoritiesAlias=_authoritiesAlias,
+                      authorities=_authorities,
+                      signatures_hashed=_signatures_hashed)
+        ]
+        self.data.tokenHash[_hash] = _token_id
+
+    @sp.entry_point
+    def update(self, params):
+
+        _token_id = params.tokenId
+        _amount = params.amount
+        _address = params.address
+        _symbol = params.symbol
+        _oracleContract = params.oracleContract
+        _groupId = params.groupId
+        _to = params.to
+        _toAlias = params.toAlias
+        _assetType = params.assetType
+        _state = params.state
+        _hash = params._hash
+        _issueDateTime = params.issueDateTime
+        _url = params.url
+        _authoritiesAlias = params.authoritiesAlias
+        _authorities = params.authorities
+        _signatures_hashed = params.signatures_hashed
+
+        sp.verify(self._isWhitelistAdmin(sp.sender))
+        # We don't check for pauseness because we're the admin.
+        if self.config.single_asset:
+            sp.verify(_token_id == 0, "single-asset: token-id <> 0")
+        if self.config.non_fungible:
+            sp.verify(_amount == 1, "NFT-asset: amount <> 1")
+        user = self.ledger_key.make(_address, _token_id)
+        sp.if ~self.token_id_set.contains(self.data.all_tokens, _token_id):
+            self.token_id_set.add(self.data.all_tokens, _token_id)
+        sp.if self.data.ledger.contains(user) & ~self.data.tokens.contains(_token_id):
+            sp.if ~self.data.tokens.contains(_token_id):
+                self.data.ledger[user].balance += _amount
         sp.else:
-             self.data.tokens[_token_id] = sp.record(
-                     token_id = _token_id,
-                     symbol = _symbol,
-                     name = "", # Consered useless here
-                     decimals = 0,
-                     extras = sp.map()
-                 )
-             self.data.tokenData[_token_id] = sp.record(oracleContract = _oracleContract,
-                                                              groupId = _groupId,
-                                                              to = _to,
-                                                              toAlias = _toAlias,
-                                                              assetType = _assetType,
-                                                              state = _state,
-                                                              _hash = _hash,
-                                                              issueDateTime = _issueDateTime,
-                                                              url = _url,
-                                                              authoritiesAlias = _authoritiesAlias,
-                                                              authorities = _authorities,
-                                                              signatures_hashed = _signatures_hashed)
-             self.data.tokenHash[_hash] = _token_id
+            self.data.ledger[user] = Ledger_value.make(_amount)
+
+        self.data.tokenData[_token_id].push(
+            sp.record(oracleContract=_oracleContract,
+                      groupId=_groupId,
+                      to=_to,
+                      toAlias=_toAlias,
+                      assetType=_assetType,
+                      state=_state,
+                      _hash=_hash,
+                      issueDateTime=_issueDateTime,
+                      url=_url,
+                      authoritiesAlias=_authoritiesAlias,
+                      authorities=_authorities,
+                      signatures_hashed=_signatures_hashed)
+        )
+
 
 class FA2_token_metadata(FA2_core):
     @sp.entry_point
@@ -672,9 +733,10 @@ class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitel
                           administrator = admin, 
                           whitelist = sp.set([admin],t = sp.TAddress),
                           tokenHash = sp.big_map(tkey = sp.TBytes, tvalue = sp.TNat),
-                          tokenData = sp.big_map(tkey = sp.TNat, tvalue = TokenData.data_type()),
+                          tokenData = sp.big_map(tkey = sp.TNat, tvalue = sp.TList(t = TokenData.data_type())),
                           adminPublicKey = admin_pk,
-                          oracleFactoryAddress = oracleFactoryAddress                         
+                          oracleFactoryAddress = oracleFactoryAddress,
+                          tokenCount=sp.as_nat(0)                      
                           )
 
 ## ## Tests
@@ -756,7 +818,6 @@ def add_test(config, is_default = True):
             scenario += c1.mint(address = bob.address,
                             amount = 1,
                             symbol = 'TK1',
-                            token_id = 1,
                             oracleContract = sp.address("KT1ThEdxfUcWUwqsdergy"),
                             groupId = "123456",
                             to = bob.address, 
@@ -769,6 +830,24 @@ def add_test(config, is_default = True):
                             authoritiesAlias = sp.set(["ben","tom","jerry"]),
                             authorities = sp.set([sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42')]),
                             signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob.address)
+            scenario.h2("update tokenData of exisiting token")
+            scenario += c1.update(address = bob.address,
+                            amount = 1,
+                            symbol = 'TK1',
+                            tokenId = 1,
+                            oracleContract = sp.address("KT1ThEdxfUcWUwqsdergy"),
+                            groupId = "123456",
+                            to = bob.address, 
+                            toAlias = "bob",
+                            assetType = "free asset",
+                            state = "completed",
+                            _hash = sp.bytes("0xABCDEF42"),
+                            issueDateTime = sp.timestamp(1000),
+                            url = "https://yolo.com/ide",
+                            authoritiesAlias = sp.set(["xxx","vvv","yyy"]),
+                            authorities = sp.set([sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42'),sp.bytes('0xABCDEF42')]),
+                            signatures_hashed = sp.set([sp.bytes('0xABCDEF42')])).run(sender = bob.address)
+            # scenario += c1.mint(address = bob.address).run(sender = bob.address)                
 
             return
         scenario.h2("Initial Minting")

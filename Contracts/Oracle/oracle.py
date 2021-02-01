@@ -90,12 +90,12 @@ class Oracle(sp.Contract):
         _assetType = params._assetType
         _state = params._state
         _url = params._url
-        _publicSignerHash = params._publicSignerHash
         _signerPublicKey = params._signerPublicKey
+        _publicSignerHash = params._publicSignerHash
         _sigS = params._sigS
 
-        sp.verify(self._isWhitelisted(_signerPublicKey))
-        sp.verify(sp.check_signature(_signerPublicKey, _sigS,_hash),"verify hash: Invalid Signature")
+        sp.verify(self._isWhitelisted(_publicSignerHash))
+        sp.verify(sp.check_signature(_publicSignerHash, _sigS,_hash),"verify hash: Invalid Signature")
 
         sp.if self.data.signerAddress.contains(_toAlias):
             _to = self.data.signerAddress[_toAlias]
@@ -115,19 +115,19 @@ class Oracle(sp.Contract):
         sp.if _status.value == 2:
             sp.failwith("Already minted")
         sp.if _status.value == 1:
-            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(_signerPublicKey):
-                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][_signerPublicKey] == False)
+            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(_publicSignerHash):
+                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][_publicSignerHash] == False)
             sp.verify(self.data.tokenData[_tokenId][_hash].state == _state)
             sp.verify(self.data.tokenData[_tokenId][_hash].oracleContract == sp.self_address)
-            self.data.tokenData[_tokenId][_hash].authorities.add(_signerPublicKey)
-            self.data.tokenData[_tokenId][_hash].authoritiesAlias.add(self.data.signerAddressAlias[_signerPublicKey])
-            self.data.tokenAuthSings[_tokenId][_hash][_signerPublicKey] = True
+            self.data.tokenData[_tokenId][_hash].authorities.add(_publicSignerHash)
+            self.data.tokenData[_tokenId][_hash].authoritiesAlias.add(self.data.signerAddressAlias[_publicSignerHash])
+            self.data.tokenAuthSings[_tokenId][_hash][_publicSignerHash] = True
 
             self.data.tokenData[_tokenId][_hash].signatures_hashed.add(sp.pack(_sigS))
 
         sp.else:
-            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(_signerPublicKey):
-                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][_signerPublicKey] == False)
+            sp.if self.data.tokenAuthSings.contains(_tokenId) & self.data.tokenAuthSings[_tokenId].contains(_hash) & self.data.tokenAuthSings[_tokenId][_hash].contains(_publicSignerHash):
+                sp.verify(self.data.tokenAuthSings[_tokenId][_hash][_publicSignerHash] == False)
             self.data.tokenData[_tokenId] = sp.map(
                 {_hash: sp.record(oracleContract = sp.self_address,
                                   groupId = self.data.groupId, 
@@ -138,17 +138,17 @@ class Oracle(sp.Contract):
                                   issueDateTime = sp.now,
                                   url = _url,
                                   authoritiesAlias = sp.set([
-                                      self.data.signerAddressAlias[_signerPublicKey]
+                                      self.data.signerAddressAlias[_publicSignerHash]
                                       ]),
-                                  authorities = sp.set([_signerPublicKey]),
+                                  authorities = sp.set([_publicSignerHash]),
                                   signatures_hashed = sp.set([sp.pack(_sigS)]))
                  })
-            self.data.tokenAuthSings[_tokenId] = sp.map({_hash : sp.map({_signerPublicKey : True})})
+            self.data.tokenAuthSings[_tokenId] = sp.map({_hash : sp.map({_publicSignerHash : True})})
             self.data.tokenStatus[_tokenId] = sp.map({_hash : 1})
 
 
         sp.if self.data.tokenData.contains(_tokenId) & self.data.tokenData[_tokenId].contains(_hash):
-            sp.if sp.len(self.data.tokenData[_tokenId][_hash].authorities)*10000/sp.len(self.data.signerAddress) == self.data.minSignerRequired:
+            sp.if sp.len(self.data.tokenData[_tokenId][_hash].authorities) == self.data.minSignerRequired:
                 c = sp.contract(sp.TRecord(symbol = sp.TString,
                                            amount = sp.TNat,
                                            address = sp.TAddress,
@@ -210,10 +210,10 @@ def test():
     scenario.show([admin, alice, bob])
 
     sampleNftAddress = sp.address("KT1Q4jEteeKTsU2itpXithzD3evidxnUxi5C")
-    # min sign required == percentage
+
     c1 = Oracle(
         NFTAddress=sampleNftAddress,
-        minSignerRequired=10000,
+        minSignerRequired=2,
         adminAddress=admin.address,
         groupId="testing123", 
         admin_pk = sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2")
@@ -249,8 +249,8 @@ def test():
         tokenId = 2,
         _hash=sp.pack("I am the signer"),
         _toAlias = "alice",
-        _publicSignerHash=admin.address,
-        _signerPublicKey=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
+        _signerPublicKey=admin.address,
+        _publicSignerHash=sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
         _sigS=issueCert_sig,
         _assetType = "card",
         _state = "new",
@@ -263,8 +263,8 @@ def test():
         tokenId = 2,
         _hash=sp.pack("I am the signer"),
         _toAlias = "alice",
-        _publicSignerHash=bob.address,
-        _signerPublicKey=sp.key("edpkvThfdv8Efh1MuqSTUk5EnUFCTjqN6kXDCNXpQ8udN3cKRhNDr2"),
+        _signerPublicKey=bob.address,
+        _publicSignerHash=sp.key("edpkvThfdv8Efh1MuqSTUk5EnUFCTjqN6kXDCNXpQ8udN3cKRhNDr2"),
         _sigS=issueCert_sig,
         _assetType = "card",
         _state = "new",
@@ -275,8 +275,8 @@ def test():
         tokenId = 2,
         _hash=sp.pack("I am the signer"),
         _toAlias = "alice",
-        _publicSignerHash=alice.address,
-        _signerPublicKey=sp.key("edpkuvNy6TuQ2z8o9wnoaTtTXkzQk7nhegCHfxBc4ecsd4qG71KYNG"),
+        _signerPublicKey=alice.address,
+        _publicSignerHash=sp.key("edpkuvNy6TuQ2z8o9wnoaTtTXkzQk7nhegCHfxBc4ecsd4qG71KYNG"),
         _sigS=aliceSig,
         _assetType = "card",
         _state = "new",
@@ -297,8 +297,8 @@ def test():
         tokenId = 2,
         _hash=sp.pack("I am the signer"),
         _toAlias = "alice",
-        _publicSignerHash=bob.address,
-        _signerPublicKey=sp.key("edpkvThfdv8Efh1MuqSTUk5EnUFCTjqN6kXDCNXpQ8udN3cKRhNDr2"),
+        _signerPublicKey=bob.address,
+        _publicSignerHash=sp.key("edpkvThfdv8Efh1MuqSTUk5EnUFCTjqN6kXDCNXpQ8udN3cKRhNDr2"),
         _sigS=bobSig,
         _assetType = "card",
         _state = "new",

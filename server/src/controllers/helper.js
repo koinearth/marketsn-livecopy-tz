@@ -8,6 +8,8 @@ function handleError(err, res) {
     return sendBadRequestErrMessage(res, err.message);
   }
 
+  console.log(err);
+
   // Handle txn related errs
   if (err instanceof TransactionError) {
     logger.error(`Transaction Err: ${JSON.stringify(err.message)}`);

@@ -11,8 +11,8 @@ const defaultLogLevel = log4js.levels.DEBUG;
 // Log4js and pm2 related fix
 // https://github.com/log4js-node/log4js-node/blob/master/docs/clustering.md
 log4js.configure({
-  appenders: { out: { type: "stdout" } },
-  categories: { default: { appenders: ["out"], level: defaultLogLevel } },
+  appenders: { out: { type: "stdout" }, console: { type: 'console' } },
+  categories: { default: { appenders: ["console"], level: defaultLogLevel } },
   pm2: true,
 });
 

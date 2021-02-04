@@ -136,6 +136,7 @@ class Relayer {
         batch.withTransfer(currOp.transferParams);
         ids.push(currOp.id);
       } catch (error) {
+        console.log(error);
         const errorMessage = error.message || error.id;
         logger.error(`ID: ${currOp.id} failed with error: ${errorMessage}`);
         await this._updateTransactionStatus([currOp.id], "failed", errorMessage);
@@ -151,16 +152,17 @@ class Relayer {
       await op.confirmation();
       await this._updateTransactionStatus(ids, "success");
     } catch (error) {
+      console.log(error);
       if (error instanceof TezosOperationError) {
         logger.error(error.message);
       } else {
         logger.error(error);
       }
 
-      await this._updateTransactionStatus(operationsToSend, "failed");
+      await this._updateTransactionStatus(ids, "failed");
+    } finally {
+      this._addBackRelayer(relayer);
     }
-
-    this._addBackRelayer(relayer);
   }
 
   async _updateTransactionHash(ids, opHash) {

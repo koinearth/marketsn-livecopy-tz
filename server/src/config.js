@@ -27,6 +27,7 @@ const NETWORK_CONFIG = {
       nftAddress: "",
     },
     networkId: "NetXdQprcVkpaWU",
+    blockTimeInMs: 60000
   },
   delphinet: {
     rpc: "https://delphinet-tezos.giganode.io",
@@ -41,6 +42,7 @@ const NETWORK_CONFIG = {
       nftAddress: "KT1AFbkeGkqKppzFYuBiphCStQ3jrmu5eDri",
     },
     networkId: "NetXm8tYqnMWky1",
+    blockTimeInMs: 30000
   },
 };
 
@@ -58,6 +60,7 @@ const config = {
   noOfConfirmations: NETWORK_CONFIG[NETWORK].noOfConfirmations,
   conseilServer: NETWORK_CONFIG[NETWORK].conseilServer,
   contractAddresses: NETWORK_CONFIG[NETWORK].contractAddresses,
+  blockTimeInMs: NETWORK_CONFIG[NETWORK].blockTimeInMs,
 
   relayerSecretKeys,
 

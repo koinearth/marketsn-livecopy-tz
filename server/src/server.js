@@ -26,7 +26,11 @@ async function initialize() {
   );
 
   logger.info("initializing relayers ...");
-  const relayer = await initializeRelayers(rpc, config.relayerSecretKeys);
+  const relayer = await initializeRelayers(
+    rpc,
+    config.relayerSecretKeys,
+    config.blockTimeInMs
+  );
 
   logger.info("initializing livecopy ...");
   const livecopyGroupFactory = await initializeLiveCopyGroupFactory(

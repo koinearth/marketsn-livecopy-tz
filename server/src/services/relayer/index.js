@@ -22,15 +22,20 @@ class Relayer {
    * Relayers for sending signed transactions of a different user
    * @param {TezosRPC} tezosRpc
    * @param {Object} relayerAccounts
+   * @param {number} blockTime
    */
-  constructor(tezosRpc, relayerAccounts) {
+  constructor(tezosRpc, relayerAccounts, blockTime) {
     this.tezosRpc = tezosRpc;
     this.availableAccounts = relayerAccounts;
 
     this.availableGasLimit = MAX_GAS_LIMIT;
     this.availableStorageLimit = MAX_STORAGE_LIMIT_IN_BYTES;
     this.operations = [];
-    this.batchTimeout = 30000 / this.availableAccounts.length;
+    this.batchTimeout = blockTime / this.availableAccounts.length;
+
+    // Gas estd. in Tezos needs a valid acct.
+    this.gasEstimationAccount = Object.assign({}, relayerAccounts[0]);
+    this.isBatchScheduled = false;
   }
 
   _chooseRelayer() {
@@ -63,11 +68,10 @@ class Relayer {
       storageCost,
       gasCost,
     } = await this.tezosRpc.testContractInvocation(
-      this.availableAccounts[0].secretKey,
+      this.gasEstimationAccount.secretKey,
       transferParams
     );
 
-    // Errored, throw back err, add relayer as available and return
     if (error) {
       throw new TransactionError(error);
     }
@@ -81,8 +85,8 @@ class Relayer {
     }
 
     // Schedule batch
-    if (this.operations.length === 0) {
-      setTimeout(this.sendOperationsBatch.bind(this), this.batchTimeout);
+    if (!this.isBatchScheduled) {
+      this._scheduleBatch();
     }
 
     // Queue operation
@@ -92,6 +96,8 @@ class Relayer {
       id,
       transferParams,
     });
+    this.availableGasLimit -= gasCost;
+    this.availableStorageLimit -= storageCost;
 
     // Success, save txn details to db with status as pending
     const transaction = new transactionsModel({
@@ -104,18 +110,53 @@ class Relayer {
     return id;
   }
 
-  async sendOperationsBatch() {
+  _scheduleBatch() {
+    if (!this.isBatchScheduled) {
+      setTimeout(this._processOperationQueue.bind(this), this.batchTimeout);
+      this.isBatchScheduled = true;
+    }
+  }
+
+  async _processOperationQueue() {
+    if (this.operations.length === 0) {
+      console.log("No pending operations");
+      return;
+    }
+
     const relayer = this._chooseRelayer();
     if (!relayer) {
-      throw new Error(
+      console.log(
         "No proxy account available for executing transaction;" +
           "All are currently busy carrying out transactions"
       );
+      this.isBatchScheduled = false;
+      this._scheduleBatch();
+      return;
     }
 
     const operationsToSend = Object.assign([], this.operations);
     this.operations = [];
 
+    this._batchAndSend(operationsToSend, relayer);
+    this.availableStorageLimit = MAX_STORAGE_LIMIT_IN_BYTES;
+    this.availableGasLimit = MAX_GAS_LIMIT;
+    this.isBatchScheduled = false;
+  }
+
+  async _batchAndSend(operationsToSend, relayer) {
+    try {
+      const { batch, ids } = await this._prepareOperationBatch(
+        relayer,
+        operationsToSend
+      );
+      const op = await this._broadcastOperationBatch(batch, ids);
+      await this._checkConfimation(op, ids);
+    } finally {
+      this._addBackRelayer(relayer);
+    }
+  }
+
+  async _prepareOperationBatch(relayer, operationsToSend) {
     const context = new Context(
       this.tezosRpc.rpcURL,
       new InMemorySigner(relayer.secretKey)
@@ -139,18 +180,34 @@ class Relayer {
         console.log(error);
         const errorMessage = error.message || error.id;
         logger.error(`ID: ${currOp.id} failed with error: ${errorMessage}`);
-        await this._updateTransactionStatus([currOp.id], "failed", errorMessage);
+        await this._updateTransactionStatus(
+          [currOp.id],
+          "failed",
+          errorMessage
+        );
       }
     }
 
-    try {
-      const op = await batch.send();
-      const { opHash } = op;
-      logger.info(`Transaction hash: ${opHash}`);
-      await this._updateTransactionHash(ids, opHash);
+    return {
+      batch,
+      ids,
+    };
+  }
 
-      await op.confirmation();
-      await this._updateTransactionStatus(ids, "success");
+  async _broadcastOperationBatch(batch, ids) {
+    const op = await batch.send();
+    const { opHash } = op;
+    logger.info(`Transaction hash: ${opHash}`);
+    await this._updateTransactionHash(ids, opHash);
+    return op;
+  }
+
+  async _checkConfimation(op, ids) {
+    try {
+      const { completed, isInCurrentBranch } = await op.confirmation();
+      const txnApplied = await isInCurrentBranch();
+      const status = txnApplied && completed ? "success" : "failed";
+      await this._updateTransactionStatus(ids, status);
     } catch (error) {
       console.log(error);
       if (error instanceof TezosOperationError) {
@@ -160,11 +217,10 @@ class Relayer {
       }
 
       await this._updateTransactionStatus(ids, "failed");
-    } finally {
-      this._addBackRelayer(relayer);
     }
   }
 
+  // Update transaction hash corr to txn ids in db
   async _updateTransactionHash(ids, opHash) {
     let dbOps = ids.map((id) => {
       return {
@@ -206,7 +262,7 @@ class Relayer {
  *
  * @returns {Promise<Relayer>}
  */
-async function initializeRelayers(tezosRpc, privateKeys) {
+async function initializeRelayers(tezosRpc, privateKeys, blockTime) {
   const accounts = [];
   for (const key of privateKeys) {
     const accountInfo = await getAccountInfo(key);
@@ -216,7 +272,7 @@ async function initializeRelayers(tezosRpc, privateKeys) {
     accounts.push(accountInfo);
   }
 
-  return new Relayer(tezosRpc, accounts);
+  return new Relayer(tezosRpc, accounts, blockTime);
 }
 
 module.exports = { initializeRelayers, Relayer };

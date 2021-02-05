@@ -31,6 +31,9 @@ class Relayer {
     this.availableStorageLimit = MAX_STORAGE_LIMIT_IN_BYTES;
     this.operations = [];
     this.batchTimeout = 30000 / this.availableAccounts.length;
+
+    // Gas estd. in Tezos needs a valid acct.
+    this.gasEstimationAccount = Object.assign({}, relayerAccounts[0]);
   }
 
   _chooseRelayer() {
@@ -63,7 +66,7 @@ class Relayer {
       storageCost,
       gasCost,
     } = await this.tezosRpc.testContractInvocation(
-      this.availableAccounts[0].secretKey,
+      this.gasEstimationAccount.secretKey,
       transferParams
     );
 

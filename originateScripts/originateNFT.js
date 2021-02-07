@@ -1,16 +1,17 @@
+import {TezosOperationError, TezosToolkit} from '@taquito/taquito';
 
-import {TezosToolkit, TezosOperationError} from '@taquito/taquito';
 import { InMemorySigner } from '@taquito/signer'
-import oracleCodeJSON from '../Contracts/NFTAddress/code.js';
-import oracleStorageJSON from '../Contracts/NFTAddress/storage';
 import conf from '../conf/conf.js';
 
-const Tezos = new TezosToolkit('https://delphinet-tezos.giganode.io');
+const Tezos = new TezosToolkit(conf.rpc);
 const util = require("util");
 
 Tezos.setSignerProvider(new InMemorySigner(conf.adminSecretKey));
 
-export async function originateOracle(){
+export async function originateNFT(){
+    const oracleCodeJSON = require('../Contracts/NFTAddress/code.js').default;
+    const oracleStorageJSON = require('../Contracts/NFTAddress/storage').default;
+    
     try{
         console.log("Begin originating NFT contract");
 
@@ -32,5 +33,3 @@ export async function originateOracle(){
         }
     }
 }
-
-originateOracle();

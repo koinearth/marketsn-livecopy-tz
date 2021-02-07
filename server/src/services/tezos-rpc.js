@@ -209,18 +209,17 @@ class TezosRPC {
     }
 
     let totalOperations = operations;
-    let currBlockPredecessor = predecessor;
+    let currBlockLevel = latestBlockLevel;
 
-    // TODO: Check this
-    while (currBlockPredecessor !== lastSeenHash) {
+    while (currBlockLevel !== lastSeenBlockLevel) {
       const { operations, predecessor, level } = await this.getBlock(
-        currBlockPredecessor
+        (currBlockLevel - 1).toString()
       );
       totalOperations = totalOperations.concat(operations);
       logger.debug(
         `Transactions: ${JSON.stringify(operations)}, Block: ${level}`
       );
-      currBlockPredecessor = predecessor;
+      currBlockLevel = level;
     }
 
     return {
@@ -252,18 +251,21 @@ class TezosRPC {
   }
 
   /**
-   * Dry run a contract invocation txn
+   * Send a contract invocation txn from a secretKey
    *
    * @param {string} secretKey
    * @param {TransferParams} transferParams
    */
-  async testContractInvocation(secretKey, transferParams) {
+  async invokeContract(secretKey, transferParams) {
     try {
-      const dummyFee = 90000;
+      const [fee, { level, blockHash }] = await Promise.all([
+        this.estimateFees(),
+        this.getLatestBlock(),
+      ]);
 
       const { to, amount, parameter } = transferParams;
       // 1. Setup in memory signer
-      const { keystore } = await this._setupSigner(secretKey);
+      const { signer, keystore } = await this._setupSigner(secretKey);
       // 2. Estimate gas, storage costs
       const {
         gas,
@@ -274,20 +276,59 @@ class TezosRPC {
         keystore,
         to,
         amount,
-        dummyFee,
+        fee,
         MAX_STORAGE_LIMIT_IN_BYTES,
         MAX_GAS_LIMIT,
         parameter.entrypoint,
         JSON.stringify(parameter.value),
         TezosParameterFormat.Micheline
       );
+      // 3. Get counter for acct.
+      let counter = await TezosNodeReader.getCounterForAccount(
+        this.rpcURL,
+        keystore.publicKeyHash
+      );
+      counter = counter + 1;
+      // 4. Construct contract op. with counter, gascost, storagecost and contract params
+      const transaction = TezosNodeWriter.constructContractInvocationOperation(
+        keystore.publicKeyHash,
+        counter,
+        to,
+        amount,
+        fee,
+        // Storage Cost is somehow inaccurate always
+        // This is a temp. fix to offset the incorrectness
+        Math.ceil(storageCost * 5),
+        gas,
+        parameter.entrypoint,
+        JSON.stringify(parameter.value),
+        TezosParameterFormat.Micheline
+      );
+      // 5. Send the operation
+      //
+      // NOTE:
+      // As Tezos doesnt have a replace by fee feature, set the max blocks to wait for
+      // After the specified number, txn cannot be included
+      const { operationGroupID } = await TezosNodeWriter.sendOperation(
+        this.rpcURL,
+        [transaction],
+        signer,
+        DEFAULT_OFFSET_FOR_TXN - MAX_BLOCKS_TO_WAIT_FOR
+      );
 
+      // 6. Extract operation hash
+      const operationHash = operationGroupID
+        .replace(/\"/g, "")
+        .replace(/\n/, "");
+      logger.info(`Transaction hash: ${operationHash}`);
       return {
         error: null,
-        gasCost: gas,
-        storageCost: Math.ceil(storageCost * 4),
+        operationHash,
+        level,
+        blockHash,
       };
     } catch (error) {
+      console.error(error);
       logger.error(JSON.stringify(error));
       if (error.response) {
         const errorMessage = this._parseRpcError(error);
@@ -308,11 +349,6 @@ class TezosRPC {
       // script_rejected are in response.contents
       if (response.contents && Array.isArray(response.contents)) {
         let errMessages = response.contents[0].metadata.operation_result.errors;
-
-        if (!errMessages || errMessages.length === 0) {
-          return error;
-        }
-
         errMessages = errMessages.filter((err) =>
           err.id.includes("script_rejected")
         );

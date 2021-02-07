@@ -10,9 +10,7 @@ Contract Codes can be found [here](https://github.com/vinnyson/koinearth-smartco
 
 In order to deploy, you can run `Yarn`
 
-- node --require @babel/register .\originateScripts\originateOracle.js
-- node --require @babel/register .\originateScripts\originateOralceFactory.js
-- node --require @babel/register .\originateScripts\originateNFT.js
+- node --require @babel/register ./originateScripts/index.js
 
 ## 2. API Server
 

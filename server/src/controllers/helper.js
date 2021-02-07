@@ -3,10 +3,13 @@ const { ValidationError, TransactionError } = require("../errors");
 
 // Generic error handler for HTTP requests
 function handleError(err, res) {
+  console.error(err);
   // Handle validation errs.
   if (err instanceof ValidationError) {
     return sendBadRequestErrMessage(res, err.message);
   }
+
+  console.error(err);
 
   // Handle txn related errs
   if (err instanceof TransactionError) {

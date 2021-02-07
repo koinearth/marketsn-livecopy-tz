@@ -7,6 +7,8 @@ const { logger } = require("./logger");
 const livecopyGroupRoutes = require("./routes/livecopy-group");
 const statusRoutes = require("./routes/status");
 const livecopyCertRoutes = require("./routes/livecopy-nft");
+const { TransactionMonitor } = require("./services/relayer/transactionMonitor");
+const { startTransactionMonitor } = require("./cron");
 
 /**
  * Services initialization and
@@ -40,6 +42,9 @@ async function initialize() {
     config.contractAddresses.nftAddress,
     relayer
   );
+
+  const transactionMonitor = new TransactionMonitor(rpc, config.conseilServer);
+  startTransactionMonitor(transactionMonitor);
 
   return {
     livecopyGroupFactory,

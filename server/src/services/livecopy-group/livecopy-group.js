@@ -122,10 +122,11 @@ class LiveCopyGroup {
         TezosMessageUtils.readPackedData(whitelistAddrHex, "bytes")
       )
     );
+
     data.aliasNames = [];
-    const { signerAddress } = storageList;
-    for (let entry of signerAddress.keys()) {
-      data.aliasNames.push(entry);
+    const { signerAddressAlias } = storageList;
+    for (const whitelistAddr of storageList.whiteListedAddresses) {
+      data.aliasNames.push(signerAddressAlias.get(whitelistAddr));
     }
     return data;
   }
@@ -133,7 +134,7 @@ class LiveCopyGroup {
   /**
    * Return the id corresponding to a string tokenSymbol
    * @param {string} tokenSymbol
-   * 
+   *
    * @returns {string}
    */
   async getTokenId(tokenSymbol) {

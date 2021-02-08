@@ -116,17 +116,25 @@ class LiveCopyGroup {
   async getWhitelistedAddresses() {
     const storageList = await this.groupContract.storage();
 
-    return storageList.whiteListedAddresses.map((whitelistAddrHex) =>
+    let data = {};
+    data.Addresses = storageList.whiteListedAddresses.map((whitelistAddrHex) =>
       TezosMessageUtils.readPublicKey(
         TezosMessageUtils.readPackedData(whitelistAddrHex, "bytes")
       )
     );
+
+    data.aliasNames = [];
+    const { signerAddressAlias } = storageList;
+    for (const whitelistAddr of storageList.whiteListedAddresses) {
+      data.aliasNames.push(signerAddressAlias.get(whitelistAddr));
+    }
+    return data;
   }
 
   /**
    * Return the id corresponding to a string tokenSymbol
    * @param {string} tokenSymbol
-   * 
+   *
    * @returns {string}
    */
   async getTokenId(tokenSymbol) {

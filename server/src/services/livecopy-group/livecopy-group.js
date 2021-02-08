@@ -116,11 +116,18 @@ class LiveCopyGroup {
   async getWhitelistedAddresses() {
     const storageList = await this.groupContract.storage();
 
-    return storageList.whiteListedAddresses.map((whitelistAddrHex) =>
+    let data = {};
+    data.Addresses = storageList.whiteListedAddresses.map((whitelistAddrHex) =>
       TezosMessageUtils.readPublicKey(
         TezosMessageUtils.readPackedData(whitelistAddrHex, "bytes")
       )
     );
+    data.aliasNames = [];
+    const { signerAddress } = storageList;
+    for (let entry of signerAddress.keys()) {
+      data.aliasNames.push(entry);
+    }
+    return data;
   }
 
   /**

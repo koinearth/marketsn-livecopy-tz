@@ -72,7 +72,7 @@ class LiveCopyGroup {
     const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
 
     const whitelistedAddresses = await this.getWhitelistedAddresses();
-    if (whitelistedAddresses.indexOf(signerAddress) > -1) {
+    if (whitelistedAddresses.Addresses.indexOf(signerAddress) > -1) {
       throw new ValidationError("Signer address already whitelisted");
     }
 

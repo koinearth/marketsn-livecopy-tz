@@ -5,12 +5,12 @@ import conf from '../conf/conf.js';
 import oracleCodeJSON from '../Contracts/OracleFactory/code.js';
 import oracleStorageJSON from '../Contracts/OracleFactory/storage';
 
-const Tezos = new TezosToolkit('https://delphinet-tezos.giganode.io');
+const Tezos = new TezosToolkit(conf.rpc);
 const util = require("util");
 
 Tezos.setSignerProvider(new InMemorySigner(conf.adminSecretKey));
 
-export async function originateOracle(){
+export async function originateOracleFactory(){
     try{
         console.log("Begin originating oracle factory contract");
 
@@ -32,5 +32,3 @@ export async function originateOracle(){
         }
     }
 }
-
-originateOracle();

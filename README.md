@@ -6,7 +6,7 @@
 - Oracle Factory
 - NFT Address (FA2)
 
-Contract Codes can be found [here](https://github.com/vinnyson/koinearth-smartcontract/tree/main/Contracts)
+Contract Codes can be found [here](https://github.com/koinearth/marketsn-livecopy-tz/tree/main/Contracts)
 
 In order to deploy, you can run `Yarn`
 

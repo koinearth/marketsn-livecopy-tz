@@ -105,3 +105,6 @@ More info on how to configure smtp can be found [here](https://support.google.co
 ## License
 
 The MarketsN Tezos LiveCopy is available under the [GPL-3.0 License](https://github.com/koinearth/marketsn-livecopy-tz/blob/main/LICENSE) License. Check out the license file for more information.
+
+## Disclaimer
+This software is at Beta stage. It is currently experimental and still under development. Many features are not fully tested/implemented yet. This version uses Tezos Delphinet (!)

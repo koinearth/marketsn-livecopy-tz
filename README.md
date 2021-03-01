@@ -7,6 +7,13 @@ This repo holds the codebase for tracking the ownership of livecopy NFTs and the
 
 [Livecopy NFT Tracking](https://dev.marketsn.com/tracking) provides a simplistic UI to present the tracking data(NFT history) in a visually appealing manner. However, the same can be verified by any third party with a tokenID of the NFT independently, through the tezos smart contracts.
 
+## Features
+Though LiveCopy is part of the MarketsN solution, it is an independent solution that enables minting and transferring Business NFTs on Tezos. LiveCopy have some unique enhancements over standard FA2 Contract 
+
+- NFTs can be minted, updated, or transferred LiveCopy stores the history of business NFT throughout its lifecycle. 
+- Right to mint NFT is decentralized. NFTs cannot be minted unilaterally by anyone. Minting, Updating & Transfering requires proof from multiple whitelisted accounts in the business network.
+
+
 ## Terminology
 
 `Oracle` -  Each business network in the supplychain is represented as a separate entity named Oracle. For e.g., this may typically consists of buyers. sellers, manufacturers and shippers.
@@ -94,3 +101,7 @@ More info on how to configure smtp can be found [here](https://support.google.co
 ## API Documentation
 
 - [API Specs](server/docs/index.md)
+
+## License
+
+The MarketsN Tezos LiveCopy is available under the [GPL-3.0 License](https://github.com/koinearth/marketsn-livecopy-tz/blob/main/LICENSE) License. Check out the license file for more information.

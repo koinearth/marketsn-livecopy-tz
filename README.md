@@ -86,7 +86,9 @@ Integration tests can be run using:
 
 ### Details about the code in brief
 - The API Server has a [relayer module](./server/src/services/relayer) which handles the batching of tz account transactions, handling the gas/storage limits per batch, prepare/sign and injecting the batch operations, as well as determining the confirmations of the broadcasted transactions.
-- [Livecopy group module](./server/src/services/livecopy-group) handles the creation of group, fetching the existing groups, updating the whitelisted signers and a process to craft NFTs per group oracle.
+- [Livecopy group module](./server/src/services/livecopy-group) handles the creation of group, fetching the existing groups, updating the whitelisted signers and a process to craft NFTs per group oracle. Group creation can only be done via livecopy admin. However, a request for the creation of the group can be placed and then the livecopy admin is notified via SMTP mail server. The env vars `SUPPORT_EMAIL_ID`, `ADMIN_EMAILS` are related to this.
+
+More info on how to configure smtp can be found [here](https://support.google.com/mail/answer/7126229?hl=en)
 - [Livecopy NFTs](./server/src/services/livecopy-nft) handles the code corresponding to the tracking of NFTs
 
 ## API Documentation

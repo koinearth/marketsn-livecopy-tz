@@ -15,7 +15,7 @@ This repo holds the codebase for tracking the ownership of livecopy NFTs and the
 
 `NFT Contract` - Holds the metadata for the supplychain tracking, ownership and the total no of livecopy NFTs being tracked currently.
 
-Since the NFTs are core of the tracking, it is necessary to secure the creation and transfer of NFTs using multi-party authorizations. For this, each group oracle is configured with all the parties involved in the supplychain network. Only after reaching a minimum threshold no. of authorizations, creation of a new NFT or transfer of existing livecopy NFT is carried out via smart contracts.
+Since the NFTs are core of the tracking, it is necessary to secure the creation and transfer of NFTs using multi-party authorizations. For this, each group oracle is configured with all the parties involved in the supplychain network. Only after reaching a minimum threshold no. of authorizations, creation of a new NFT or transfer of existing livecopy NFT is carried out via group oracle smart contract.
 
 ## 1. Contracts
 

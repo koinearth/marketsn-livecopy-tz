@@ -9,7 +9,7 @@ This repo holds the codebase for tracking the ownership of livecopy NFTs and the
 
 ## Terminology
 
-`Oracle` -  Each group in the supplychain is represented as a separate entity named Oracle.
+`Oracle` -  Each business network in the supplychain is represented as a separate entity named Oracle. For e.g., this may typically consists of buyers. sellers, manufacturers and shippers.
 
 `Oracle Factory` - Facilitates the creation of such oracles by parties with required access controls.
 

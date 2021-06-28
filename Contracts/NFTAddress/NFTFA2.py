@@ -338,7 +338,7 @@ class Token_id_set:
 
     def add(self, metaset, v):
         if self.config.assume_consecutive_token_ids:
-            sp.verify(metaset == v, message="Token-IDs should be consecutive")
+            #sp.verify(metaset == v, message="Token-IDs should be consecutive")
             metaset.set(sp.max(metaset, v + 1))
         else:
             metaset.add(v)
@@ -574,33 +574,42 @@ class FA2_change_metadata(FA2_core):
 class FA2_mint(FA2_core):
     @sp.entry_point
     def mint(self, params):
+
+        _token_id = self.data.tokenCount
+
         #sp.verify(self.is_administrator(sp.sender), message = self.error_message.not_admin())
         sp.verify(self._isWhitelistAdmin(sp.sender))
         # We don't check for pauseness because we're the admin.
         if self.config.single_asset:
-            sp.verify(params.token_id == 0,
+            sp.verify(_token_id == 0,
                       message="single-asset: token-id <> 0")
         if self.config.non_fungible:
             sp.verify(params.amount == 1, message="NFT-asset: amount <> 1")
             sp.verify(
                 ~ self.token_id_set.contains(
-                    self.data.all_tokens, params.token_id),
+                    self.data.all_tokens, _token_id),
                 message="NFT-asset: cannot mint twice same token"
             )
-        user = self.ledger_key.make(params.address, params.token_id)
-        self.token_id_set.add(self.data.all_tokens, params.token_id)
+        user = self.ledger_key.make(params.address, _token_id)
+        self.token_id_set.add(self.data.all_tokens, _token_id)
         sp.if self.data.ledger.contains(user):
             self.data.ledger[user].balance += params.amount
         sp.else:
             self.data.ledger[user] = Ledger_value.make(params.amount)
-        sp.if self.data.token_metadata.contains(params.token_id):
+        sp.if self.data.token_metadata.contains(_token_id):
             pass
         sp.else:
-            self.data.token_metadata[params.token_id] = sp.record(
-                token_id=params.token_id,
+            self.data.token_metadata[_token_id] = sp.record(
+                token_id=_token_id,
                 token_info=params.metadata
             )
-            self.data.total_supply[params.token_id] = params.amount
+            self.data.total_supply[_token_id] = params.amount
+
+        sp.verify(~self.data.tokenHash.contains(params._hash),
+                  message="NFT-asset: cannot mint token with existing hash")
+
+        self.data.tokenHash[params._hash] = _token_id
+        self.data.tokenCount += 1
 
     @sp.entry_point
     def update(self, params):
@@ -832,7 +841,7 @@ def add_test(config, is_default=True):
         c1.mint(address=alice.address,
                 amount=10,
                 metadata=tok0_md,
-                token_id=0).run(sender=admin)
+                _hash=sp.bytes("0xABCDEF42")).run(sender=admin)
         scenario.h2("Update Token")
         scenario.p("The administrator mints 100 token-0's to Alice.")
         tok0_md = FA2.make_metadata(
@@ -844,6 +853,7 @@ def add_test(config, is_default=True):
             amount=90,
             metadata=tok0_md,
             token_id=0).run(sender=admin)
+        scenario.show(c1.data.ledger)
         scenario.h2("Transfers Alice -> Bob")
         c1.transfer(
             [
@@ -887,7 +897,7 @@ def add_test(config, is_default=True):
         c1.mint(address=bob.address,
                 amount=100,
                 metadata=tok1_md,
-                token_id=1).run(sender=admin)
+                _hash=sp.bytes("0xABCDEF43")).run(sender=admin)
         tok2_md = FA2.make_metadata(
             name="The Token Number Three",
             decimals=0,
@@ -895,7 +905,7 @@ def add_test(config, is_default=True):
         c1.mint(address=bob.address,
                 amount=200,
                 metadata=tok2_md,
-                token_id=2).run(sender=admin)
+                _hash=sp.bytes("0xABCDEF44")).run(sender=admin)
         scenario.h3("Multi-token Transfer Bob -> Alice")
         c1.transfer(
             [

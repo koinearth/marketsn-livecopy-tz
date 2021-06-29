@@ -2,9 +2,22 @@
 
 const { logger } = require("../../logger");
 const { handleError, sendBadRequestErrMessage } = require("../helper");
+const ipfsAPI = require('ipfs-api')
+const ipfs = ipfsAPI({host: 'ipfs.infura.io', port: '5001', protocol: 'https'})
+
+const adddata = async({content}) => {
+  const file = {content :Buffer.from(content)};
+  const dataadded = await ipfs.add(file);
+  return dataadded[0].hash;
+
+}
 
 // Issue an NFT corr. to a group
 const issueCert = async function (req, res) {
+  let oldipfs = await getCertforIPFS(req.body.TokenId);
+  req.body.Data["oldipfs"] = oldipfs;
+  let content = JSON.stringify(req.body.Data) 
+  let ipfshash =  await adddata({"content":content})
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
     const {
@@ -17,6 +30,7 @@ const issueCert = async function (req, res) {
       State,
       AssetType,
       URL,
+      Data,
     } = req.body;
 
     // GroupId validations
@@ -133,7 +147,8 @@ const issueCert = async function (req, res) {
       TokenOwner,
       State,
       SignerPublicKey,
-      Signature
+      Signature,
+      ipfshash
     );
 
     logger.info("Issue cert operation id:", transactionHash);
@@ -147,6 +162,57 @@ const issueCert = async function (req, res) {
     return handleError(err, res);
   }
 };
+
+
+const getCertforIPFS = async function (TokenId, TokenSymbol, GroupId) {
+  try {
+    
+
+    if (!TokenId && !TokenSymbol && !GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Should provide either of TokenId or (TokenSymbol and GroupId)"
+      );
+    }
+
+    // TokenId null
+    // 1. Retrieve the tokenId using groupId and symbol
+    // 2. Fetch the details using the tokenId
+    if (!TokenId) {
+      if (!TokenSymbol) {
+        return sendBadRequestErrMessage(
+          res,
+          "Missing parameter TokenSymbol in request"
+        );
+      }
+
+      if (!GroupId) {
+        return sendBadRequestErrMessage(
+          res,
+          "Missing parameter GroupId in request"
+        );
+      }
+      const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+      const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
+        GroupId
+      );
+      TokenId = await livecopyGroup.getTokenId(TokenSymbol);
+    }
+
+    // Retrieve details using TokenId
+    const livecopyNft = req.app.get("livecopyNft");
+    const tokenDetails = await livecopyNft.getTokenData(TokenId);
+    return tokenDetails
+  } catch (err) {
+    
+      if(err.reason == undefined)
+      {
+        return null;
+      }
+    return handleError(err, res);
+  }
+};
+
 
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
@@ -187,12 +253,23 @@ const getCert = async function (req, res) {
     // Retrieve details using TokenId
     const livecopyNft = req.app.get("livecopyNft");
     const tokenDetails = await livecopyNft.getTokenData(TokenId);
-    return res.status(200).send({
-      status: "success",
-      code: 200,
-      message: "Successfully queried the smart contract",
-      data: tokenDetails,
-    });
+    await ipfs.files.get(tokenDetails, function (err, files) {
+      files.forEach((file) => {
+       
+      let data = (file.content.toString('utf8'))
+      
+      return res.status(200).send({
+        status: "success",
+        code: 200,
+        message: "Successfully queried the smart contract",
+        data: tokenDetails,
+      });
+        
+      }) 
+      
+    })
+  
+  
   } catch (err) {
     return handleError(err, res);
   }

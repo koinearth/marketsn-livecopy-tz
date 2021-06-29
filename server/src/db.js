@@ -8,7 +8,7 @@ const MONGO_HOSTNAME = DB_CONFIG.host;
 const MONGO_PORT = DB_CONFIG.port;
 const MONGO_DB = DB_CONFIG.dbName;
 
-const url = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${MONGO_DB}`;
+const url = `mongodb://${MONGO_HOSTNAME}:${MONGO_PORT}/${MONGO_DB}`;
 
 // MongoDB connect
 async function connect() {

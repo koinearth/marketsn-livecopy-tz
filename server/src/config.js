@@ -44,6 +44,21 @@ const NETWORK_CONFIG = {
     networkId: "NetXm8tYqnMWky1",
     blockTimeInMs: 30000,
   },
+  edonet: {
+    rpc: "https://edonet.smartpy.io",
+    noOfConfirmations: 1,
+    conseilServer: {
+      url: "https://conseil-edo.cryptonomic-infra.tech",
+      apiKey: "4d70ca8e-5c05-483a-8baf-3b419d0dd5ed",
+      network: "edonet",
+    },
+    contractAddresses: {
+      groupFactoryAddress: "KT1W41nVbKvzpkoxNicjEjRhGRduPKLMJmep",
+      nftAddress: "KT1RHoBPFMAGkAqpgp7KQfNnQL5eMpnxEXAB",
+    },
+    networkId: "NetXSgo1ZT2DRUG",
+    blockTimeInMs: 30000,
+  },
 };
 
 // Set the default network to latest testnet, by default

@@ -136,6 +136,8 @@ class LiteOracle(sp.Contract):
         c = sp.contract(sp.TRecord(
             amount=sp.TNat,
             address=sp.TAddress,
+            oracleContract=sp.TAddress,
+            tokenSymbol=sp.TString,
             _hash=sp.TBytes,
             metadata=sp.TMap(sp.TString, sp.TBytes)),
             address=self.data.NFTAddress, entry_point="mint"
@@ -143,6 +145,8 @@ class LiteOracle(sp.Contract):
         content = sp.record(
             amount=1,
             address=self.data.tokerOwner[_tokenSymbol][_hash],
+            oracleContract=sp.self_address,
+            tokenSymbol=_tokenSymbol,
             _hash=_hash,
             metadata={"oracle": sp.pack(sp.self_address), "assetId": sp.pack(
                 _tokenSymbol), "cid": _hash},

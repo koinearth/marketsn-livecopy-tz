@@ -117,13 +117,18 @@ class LiteOracle(sp.Contract):
     def _updateNFT(self, _tokenSymbol, _tokenId, _hash):
         c = sp.contract(sp.TRecord(tokenId=sp.TNat,
                                    amount=sp.TNat,
-                                   address=sp.TAddress),
+                                   address=sp.TAddress,
+                                   _hash=sp.TBytes,
+                                   metadata=sp.TMap(sp.TString, sp.TBytes)),
                         address=self.data.NFTAddress, entry_point="update"
                         ).open_some()
         content = sp.record(
             tokenId=_tokenId,
             amount=1,
-            address=self.data.tokerOwner[_tokenSymbol][_hash]
+            address=self.data.tokerOwner[_tokenSymbol][_hash],
+            _hash=_hash,
+            metadata={"oracle": sp.pack(sp.self_address), "assetId": sp.pack(
+                _tokenSymbol), "cid": _hash},
         )
         sp.transfer(content, sp.mutez(0), c)
 

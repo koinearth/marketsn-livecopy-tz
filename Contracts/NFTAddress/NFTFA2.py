@@ -622,19 +622,17 @@ class FA2_mint(FA2_core):
         if self.config.non_fungible:
             sp.verify(params.amount == 1, message="NFT-asset: amount <> 1")
         user = self.ledger_key.make(params.address, params.token_id)
-        #self.token_id_set.add(self.data.all_tokens, params.token_id)
         sp.if self.data.ledger.contains(user):
             self.data.ledger[user].balance += params.amount
-        sp.else:
-            self.data.ledger[user] = Ledger_value.make(params.amount)
-        sp.if self.data.token_metadata.contains(params.token_id):
-            pass
-        sp.else:
-            self.data.token_metadata[params.token_id] = sp.record(
-                token_id=params.token_id,
-                token_info=params.metadata
-            )
-            self.data.total_supply[params.token_id] = params.amount
+        self.data.token_metadata[params.token_id] = sp.record(
+            token_id=params.token_id,
+            token_info=params.metadata
+        )
+        sp.verify(~self.data.tokenHash.contains(params._hash),
+                  message="NFT-asset: cannot update token with already existing hash")
+
+        self.data.tokenHash[params._hash] = params.token_id
+        self.data.total_supply[params.token_id] = params.amount
 
 
 class FA2_token_metadata(FA2_core):
@@ -852,7 +850,8 @@ def add_test(config, is_default=True):
             address=alice.address,
             amount=90,
             metadata=tok0_md,
-            token_id=0).run(sender=admin)
+            token_id=0,
+            _hash=sp.bytes("0xABCDEF41")).run(sender=admin)
         scenario.show(c1.data.ledger)
         scenario.h2("Transfers Alice -> Bob")
         c1.transfer(

@@ -608,6 +608,14 @@ class FA2_mint(FA2_core):
         sp.verify(~self.data.tokenHash.contains(params._hash),
                   message="NFT-asset: cannot mint token with existing hash")
 
+        # Inform oracle contract of the tokenId created
+        sp.if params.oracleContract != self.data.administrator:
+            c = sp.contract(sp.TRecord(tokenId=sp.TNat, tokenSymbol=sp.TString),
+                            address=params.oracleContract, entry_point="updateTokenId").open_some()
+            content = sp.record(tokenId=_token_id,
+                                tokenSymbol=params.tokenSymbol)
+            sp.transfer(content, sp.mutez(0), c)
+
         self.data.tokenHash[params._hash] = _token_id
         self.data.tokenCount += 1
 
@@ -839,6 +847,8 @@ def add_test(config, is_default=True):
         c1.mint(address=alice.address,
                 amount=10,
                 metadata=tok0_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
                 _hash=sp.bytes("0xABCDEF42")).run(sender=admin)
         scenario.h2("Update Token")
         scenario.p("The administrator mints 100 token-0's to Alice.")
@@ -896,6 +906,8 @@ def add_test(config, is_default=True):
         c1.mint(address=bob.address,
                 amount=100,
                 metadata=tok1_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
                 _hash=sp.bytes("0xABCDEF43")).run(sender=admin)
         tok2_md = FA2.make_metadata(
             name="The Token Number Three",
@@ -904,6 +916,8 @@ def add_test(config, is_default=True):
         c1.mint(address=bob.address,
                 amount=200,
                 metadata=tok2_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
                 _hash=sp.bytes("0xABCDEF44")).run(sender=admin)
         scenario.h3("Multi-token Transfer Bob -> Alice")
         c1.transfer(

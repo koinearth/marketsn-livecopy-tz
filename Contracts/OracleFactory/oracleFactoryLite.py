@@ -73,12 +73,8 @@ class LiteOracle(sp.Contract):
 
     @sp.entry_point
     def issueCert(self, params):
-        # sp.set_type(params._tokenSymbol, sp.TString)
-        # sp.set_type(params._hash, sp.TBytes)
-        # sp.set_type(params._toAlias, sp.TString)
-        # sp.set_type(params._publicSignerHash, sp.TAddress)
-        # sp.set_type(params._signerPublicKey, sp.TKey)
-        # sp.set_type(params._sigS, sp.TSignature)
+        sp.set_type(params._tokenSymbol, sp.TString)
+        sp.set_type(params._cid, sp.TString)
 
         # Check signature
         sp.verify(self._isWhitelisted(params._signerPublicKey),
@@ -92,15 +88,12 @@ class LiteOracle(sp.Contract):
         sp.else:
             sp.failwith("No to address found")
 
-        self._mintNFT(params._tokenSymbol, params._hash, _to)
+        self._mintNFT(params._tokenSymbol, params._hash, _to, params._cid)
 
     @sp.entry_point
     def updateCert(self, params):
-        # sp.set_type(params._tokenSymbol, sp.TString)
-        # sp.set_type(params._hash, sp.TBytes)
-        # sp.set_type(params._publicSignerHash, sp.TAddress)
-        # sp.set_type(params._signerPublicKey, sp.TKey)
-        # sp.set_type(params._sigS, sp.TSignature)
+        sp.set_type(params._tokenSymbol, sp.TString)
+        sp.set_type(params._cid, sp.TString)
 
         # Check signature
         sp.verify(self._isWhitelisted(params._signerPublicKey),
@@ -108,21 +101,22 @@ class LiteOracle(sp.Contract):
         sp.verify(sp.check_signature(params._signerPublicKey, params._sigS, params._hash),
                   "verify hash: Invalid Signature")
 
-        self._updateNFT(params._tokenSymbol, params._hash)
+        self._updateNFT(params._tokenSymbol, params._hash, params._cid)
 
-    def _updateNFT(self, _tokenSymbol, _hash):
+    def _updateNFT(self, _tokenSymbol, _hash, _cid):
         c = sp.contract(sp.TRecord(tokenId=sp.TNat,
                                    metadata=sp.TMap(sp.TString, sp.TBytes)),
                         address=self.data.NFTAddress, entry_point="update"
                         ).open_some()
         content = sp.record(
             tokenId=self.data.tokensIssued[_tokenSymbol],
-            metadata={"oracle": sp.pack(sp.self_address), "assetId": sp.pack(
-                _tokenSymbol), "cid": _hash},
+            metadata={"hash": _hash, "assetId": sp.pack(
+                _tokenSymbol), "cid": sp.pack(
+                _cid)},
         )
         sp.transfer(content, sp.mutez(0), c)
 
-    def _mintNFT(self, _tokenSymbol, _hash, _to):
+    def _mintNFT(self, _tokenSymbol, _hash, _to, _cid):
         c = sp.contract(sp.TRecord(
             amount=sp.TNat,
             address=sp.TAddress,
@@ -138,8 +132,9 @@ class LiteOracle(sp.Contract):
             oracleContract=sp.self_address,
             tokenSymbol=_tokenSymbol,
             _hash=_hash,
-            metadata={"oracle": sp.pack(sp.self_address), "assetId": sp.pack(
-                _tokenSymbol), "cid": _hash},
+            metadata={"hash": _hash, "assetId": sp.pack(
+                _tokenSymbol), "cid": sp.pack(
+                _cid)},
         )
         sp.transfer(content, sp.mutez(0), c)
 

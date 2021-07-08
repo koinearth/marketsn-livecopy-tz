@@ -2,10 +2,21 @@
 
 const { logger } = require("../../logger");
 const { handleError, sendBadRequestErrMessage } = require("../helper");
+const ipfsAPI = require('ipfs-api')
+const ipfs = ipfsAPI({host: 'ipfs.infura.io', port: '5001', protocol: 'https'})
 
+const adddata = async({content}) => {
+  const file = {content :Buffer.from(content)};
+  const dataadded = await ipfs.add(file);
+  return dataadded[0].hash;
+
+}
 // Issue an NFT corr. to a group
 const issueCert = async function (req, res) {
   try {
+    req.body.Data["PreviousCID"] = "";
+    let content = JSON.stringify(req.body.Data) 
+    let CID =  await adddata({"content":content})
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
     const {
       GroupId,
@@ -14,9 +25,6 @@ const issueCert = async function (req, res) {
       Hash,
       SignerPublicKey,
       Signature,
-      State,
-      AssetType,
-      URL,
     } = req.body;
 
     // GroupId validations
@@ -91,47 +99,21 @@ const issueCert = async function (req, res) {
       );
     }
 
-    // State validations
-    if (!State) {
-      return sendBadRequestErrMessage(
-        res,
-        "Missing parameter State in request"
-      );
-    }
-    if (typeof State !== "string") {
-      return sendBadRequestErrMessage(res, "State should be a valid string");
-    }
-
-    // AssetType validations
-    if (!AssetType) {
-      return sendBadRequestErrMessage(
-        res,
-        "Missing parameter AssetType in request"
-      );
-    }
-    if (typeof AssetType !== "string") {
-      return sendBadRequestErrMessage(
-        res,
-        "AssetType should be a valid string"
-      );
-    }
-
     // URL validations
-    if (!URL) {
-      return sendBadRequestErrMessage(res, "Missing parameter URL in request");
+    if (!CID) {
+      return sendBadRequestErrMessage(res, "Missing parameter CID in request");
     }
-    if (typeof URL !== "string") {
-      return sendBadRequestErrMessage(res, "URL should be a valid string");
+    if (typeof CID !== "string") {
+      return sendBadRequestErrMessage(res, "CID should be a valid string");
     }
 
     const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
+
     const { transactionHash } = await livecopyGroup.issueCertificate(
       TokenId,
-      AssetType,
-      URL,
+      CID,
       Hash,
       TokenOwner,
-      State,
       SignerPublicKey,
       Signature
     );
@@ -147,6 +129,144 @@ const issueCert = async function (req, res) {
     return handleError(err, res);
   }
 };
+
+const getCertforIPFS = async function (req,res,TokenSymbol, GroupId) {
+  try {
+    if (!TokenSymbol) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter TokenSymbol in request"
+      );
+    }
+
+    if (!GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter GroupId in request"
+      );
+    }
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
+        GroupId
+      );
+    let TokenId = await livecopyGroup.getTokenId(TokenSymbol);
+    // Retrieve details using TokenId
+    const livecopyNft = req.app.get("livecopyNft");
+    const tokenDetails = await livecopyNft.getTokenData(TokenId);
+    return tokenDetails
+  } catch (err) {
+      console.log(err)
+      if(err.reason == undefined)
+      {
+        return null;
+      }
+    return handleError(err, res);
+  }
+};
+// Update an NFT corr. to a group
+const updateCert = async function (req, res) {
+  try {
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    const {
+      GroupId,
+      TokenId,
+      Hash,
+      SignerPublicKey,
+      Signature,
+    } = req.body;
+
+    let previousCID = await getCertforIPFS(req, res, TokenId, GroupId);
+    let publicData = req.body.Data;
+    publicData["PreviousCID"] = previousCID["cid"];
+    let content = JSON.stringify(publicData) 
+    let CID =  await adddata({"content":content})
+    // GroupId validations
+    if (!GroupId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter GroupId in request"
+      );
+    }
+    if (typeof GroupId !== "string") {
+      return sendBadRequestErrMessage(res, "GroupId should be a valid string");
+    }
+
+    // TokenId validations
+    if (!TokenId) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter TokenId in request"
+      );
+    }
+    if (typeof TokenId !== "string") {
+      return sendBadRequestErrMessage(res, "TokenId should be a valid string");
+    }
+
+    // Hash validations
+    if (!Hash) {
+      return sendBadRequestErrMessage(res, "Missing parameter Hash in request");
+    }
+    if (typeof Hash !== "string") {
+      return sendBadRequestErrMessage(res, "Hash should be a valid string");
+    }
+
+    // SignerPublicKey validations
+    if (!SignerPublicKey) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter SignerPublicKey in request"
+      );
+    }
+    if (typeof SignerPublicKey !== "string") {
+      return sendBadRequestErrMessage(
+        res,
+        "SignerPublicKey should be a valid string"
+      );
+    }
+
+    // Signature validations
+    if (!Signature) {
+      return sendBadRequestErrMessage(
+        res,
+        "Missing parameter Signature in request"
+      );
+    }
+    if (typeof Signature !== "string") {
+      return sendBadRequestErrMessage(
+        res,
+        "Signature should be a valid string"
+      );
+    }
+
+    // URL validations
+    if (!CID) {
+      return sendBadRequestErrMessage(res, "Missing parameter CID in request");
+    }
+    if (typeof CID !== "string") {
+      return sendBadRequestErrMessage(res, "CID should be a valid string");
+    }
+
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
+    const { transactionHash } = await livecopyGroup.updateCertificate(
+      TokenId,
+      CID,
+      Hash,
+      SignerPublicKey,
+      Signature
+    );
+
+    logger.info("Update cert operation id:", transactionHash);
+    return res.status(200).send({
+      status: "success",
+      code: 200,
+      message: "Successfully submitted the transaction",
+      data: { transactionHash },
+    });
+  } catch (err) {
+    return handleError(err, res);
+  }
+};
+
 
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
@@ -199,4 +319,5 @@ const getCert = async function (req, res) {
 };
 
 exports.issueCert = issueCert;
+exports.updateCert = updateCert;
 exports.getCert = getCert;

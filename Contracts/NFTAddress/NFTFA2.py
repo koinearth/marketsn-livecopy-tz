@@ -605,8 +605,8 @@ class FA2_mint(FA2_core):
             )
             self.data.total_supply[_token_id] = params.amount
 
-        sp.verify(~self.data.tokenHash.contains(params._hash),
-                  message="NFT-asset: cannot mint token with existing hash")
+        # sp.verify(~self.data.tokenHash.contains(params._hash),
+        #           message="NFT-asset: cannot mint token with existing hash")
 
         # Inform oracle contract of the tokenId created
         sp.if params.oracleContract != self.data.administrator:
@@ -616,31 +616,16 @@ class FA2_mint(FA2_core):
                                 tokenSymbol=params.tokenSymbol)
             sp.transfer(content, sp.mutez(0), c)
 
-        self.data.tokenHash[params._hash] = _token_id
+        # self.data.tokenHash[params._hash] = _token_id
         self.data.tokenCount += 1
 
     @sp.entry_point
     def update(self, params):
-        #sp.verify(self.is_administrator(sp.sender), message = self.error_message.not_admin())
         sp.verify(self._isWhitelistAdmin(sp.sender))
-        # We don't check for pauseness because we're the admin.
-        if self.config.single_asset:
-            sp.verify(params.token_id == 0,
-                      message="single-asset: token-id <> 0")
-        if self.config.non_fungible:
-            sp.verify(params.amount == 1, message="NFT-asset: amount <> 1")
-        user = self.ledger_key.make(params.address, params.token_id)
-        sp.if self.data.ledger.contains(user):
-            self.data.ledger[user].balance += params.amount
         self.data.token_metadata[params.token_id] = sp.record(
             token_id=params.token_id,
             token_info=params.metadata
         )
-        sp.verify(~self.data.tokenHash.contains(params._hash),
-                  message="NFT-asset: cannot update token with already existing hash")
-
-        self.data.tokenHash[params._hash] = params.token_id
-        self.data.total_supply[params.token_id] = params.amount
 
 
 class FA2_token_metadata(FA2_core):
@@ -845,7 +830,7 @@ def add_test(config, is_default=True):
             decimals=2,
             symbol="TK0")
         c1.mint(address=alice.address,
-                amount=10,
+                amount=100,
                 metadata=tok0_md,
                 oracleContract=admin.address,
                 tokenSymbol="",
@@ -857,11 +842,8 @@ def add_test(config, is_default=True):
             decimals=3,
             symbol="TK0")
         c1.update(
-            address=alice.address,
-            amount=90,
             metadata=tok0_md,
-            token_id=0,
-            _hash=sp.bytes("0xABCDEF41")).run(sender=admin)
+            token_id=0).run(sender=admin)
         scenario.show(c1.data.ledger)
         scenario.h2("Transfers Alice -> Bob")
         c1.transfer(

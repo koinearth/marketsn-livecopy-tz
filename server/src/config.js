@@ -30,7 +30,7 @@ const NETWORK_CONFIG = {
     blockTimeInMs: 60000,
   },
   delphinet: {
-    rpc: "https://delphinet-tezos.giganode.io",
+    rpc: "https://delphinet.smartpy.io",
     noOfConfirmations: 1,
     conseilServer: {
       url: "https://conseil-dev.cryptonomic-infra.tech",
@@ -38,16 +38,46 @@ const NETWORK_CONFIG = {
       network: "delphinet",
     },
     contractAddresses: {
-      groupFactoryAddress: "KT1QPa7BdUqqeRK9VBqdKzGV2j1xy3xjh5jh",
-      nftAddress: "KT1ReeoAiNbpKyfWCWRmWzFwZWaYdPCuW4YU",
+      groupFactoryAddress: "KT1SP3xJGpCXbp8fjLJQyDDiQML1wiLi6TnW",
+      nftAddress: "KT1EDsJBAJC5QGXwez5TbGeC8XgdFjAkTFba",
     },
     networkId: "NetXm8tYqnMWky1",
+    blockTimeInMs: 30000,
+  },
+  edonet: {
+    rpc: "https://edonet.smartpy.io",
+    noOfConfirmations: 1,
+    conseilServer: {
+      url: "https://conseil-edo.cryptonomic-infra.tech",
+      apiKey: "4d70ca8e-5c05-483a-8baf-3b419d0dd5ed",
+      network: "edonet",
+    },
+    contractAddresses: {
+      groupFactoryAddress: "KT1VbKGXcLemQxr1oYJEooQb79PnzSbEwhNC",
+      nftAddress: "KT1VXzbsmSbyxiFTQ9YsCX7crXGX3HHdgy93",
+    },
+    networkId: "NetXSgo1ZT2DRUG",
+    blockTimeInMs: 30000,
+  },
+  florencenet: {
+    rpc: "https://florencenet.smartpy.io",
+    noOfConfirmations: 1,
+    conseilServer: {
+      url: "https://conseil-florence.cryptonomic-infra.tech",
+      apiKey: "4d70ca8e-5c05-483a-8baf-3b419d0dd5ed",
+      network: "florence",
+    },
+    contractAddresses: {
+      groupFactoryAddress: "KT1Dov7vZsVU2iCaPp86yiu8ozeJ56FqLmzv",
+      nftAddress: "KT1WNkuKGhEGbRTeRaqvW27EZv23TCwi3EP1",
+    },
+    networkId: "NetXxkAx4woPLyu",
     blockTimeInMs: 30000,
   },
 };
 
 // Set the default network to latest testnet, by default
-const NETWORK = process.env.NETWORK || "delphinet";
+const NETWORK = process.env.NETWORK || "edonet";
 const relayerSecretKeys = process.env.RELAYER_SECRET_KEYS
   ? process.env.RELAYER_SECRET_KEYS.split(" ")
   : [];

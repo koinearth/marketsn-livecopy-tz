@@ -22,81 +22,21 @@ class LiveCopyNft {
    * @returns {object}
    */
   async getTokenData(tokenId) {
-    const { tokenData, tokens } = await this.nftContract.storage();
-    const tokenDataList = await tokenData.get(tokenId);
+    const { token_metadata } = await this.nftContract.storage();
+    const tokenData = await token_metadata.get(tokenId);
 
-    if (!tokenDataList) {
+    if (!tokenData) {
       throw new ValidationError("TokenId not found");
     }
 
-    const tokenSymbol = (await tokens.get(tokenId)).symbol;
-
-    const history = [];
-    for (const tokenData of tokenDataList) {
-      let {
-        _hash,
-        authorities,
-        issueDateTime,
-        oracleContract,
-        signatures_hashed,
-        state,
-        url,
-      } = tokenData;
-
-      // Get authority aliases corr. to authorities from contract
-      const groupOracleContract = await this.tezosRpc.getContractInstance(
-        oracleContract
-      );
-      const { signerAddressAlias } = await groupOracleContract.storage();
-      const authoritiesAliases = authorities.map((authority) =>
-        signerAddressAlias.get(authority)
-      );
-
-      // Convert signatures from bytes to readable `edsig` format
-      const signatures = signatures_hashed.map((signatureBytes) =>
-        TezosMessageUtils.readSignatureWithHint(
-          hex2buf(TezosMessageUtils.readPackedData(signatureBytes, "bytes")),
-          "edsig"
-        )
-      );
-
-      // Convert from bytes to pub key
-      authorities = authorities.map((authority) =>
-        TezosMessageUtils.readPublicKey(
-          TezosMessageUtils.readPackedData(authority, "bytes")
-        )
-      );
-
-      // Construct signature mapping
-      const signature_mapping = await this._constructSignatureMapping(
-        _hash,
-        authorities,
-        authoritiesAliases,
-        signatures
-      );
-
-      // Convert from bytes to respective formats
-      _hash = "0x" + TezosMessageUtils.readPackedData(_hash, "bytes");
-
-      history.push({
-        state,
-        hash: _hash,
-        url,
-        issueDateTime: issueDateTime,
-        signatures: signature_mapping,
-      });
-    }
-
+    let cid = await tokenData.token_info.get("cid")
+    cid = await TezosMessageUtils.readPackedData(cid,"string")
+    let assetId = await tokenData.token_info.get("assetId")
+    assetId = await TezosMessageUtils.readPackedData(assetId,"string")
     return {
-      ownerAddr: tokenDataList[0].to,
-      ownerOrgId: tokenDataList[0].toAlias,
-      ownerOrgName: tokenDataList[0].toAlias,
-      oracleContract: tokenDataList[0].oracleContract,
-      groupId: tokenDataList[0].groupId,
-      assetType: tokenDataList[0].assetType,
-      history,
+      assetId,
       tokenId,
-      tokenSymbol,
+      cid
     };
   }
 

@@ -162,11 +162,9 @@ class LiveCopyGroup {
    */
   async issueCertificate(
     tokenId,
-    assetType,
-    documentUrl,
+    documentcid,
     documentHash,
     issuedToAlias,
-    state,
     signerPublicKey,
     signature
   ) {
@@ -199,17 +197,59 @@ class LiveCopyGroup {
     }
 
     const issueCertificateMethod = this.groupContract.methods["issueCert"](
-      assetType,
+      documentcid,
       documentHash,
-      signerAddress,
       signature,
       signerPublicKey,
-      state,
       issuedToAlias,
       tokenId,
-      documentUrl
     );
     const transferParams = issueCertificateMethod.toTransferParams();
+    const transactionHash = await this.relayer.sendContractInvocation(
+      transferParams
+    );
+    return {
+      transactionHash,
+    };
+  }
+
+  async updateCertificate(
+    tokenId,
+    documentcid,
+    documentHash,
+    signerPublicKey,
+    signature
+  ) {
+    // Validate signer pub key
+    const isValid = validatePublicKey(signerPublicKey);
+    if (!isValid) {
+      throw new ValidationError("Invalid signer public key");
+    }
+    
+    const signerPublicKeyBuf = TezosMessageUtils.writeKeyWithHint(
+      signerPublicKey,
+      "edpk"
+    );
+    const signerAddress = TezosMessageUtils.computeKeyHash(signerPublicKeyBuf);
+
+    // Validate signature
+    const sigVerified = await verifyTokenIssuanceSignature(
+      documentHash,
+      signerPublicKey,
+      signature
+    );
+    if (!sigVerified) {
+      throw new ValidationError("Invalid signature");
+    }
+
+    const updateCertificateMethod = this.groupContract.methods["updateCert"](
+      documentcid,
+      documentHash,
+      signature,
+      signerPublicKey,
+      tokenId,
+    );
+    const transferParams = updateCertificateMethod.toTransferParams();
     const transactionHash = await this.relayer.sendContractInvocation(
       transferParams
     );

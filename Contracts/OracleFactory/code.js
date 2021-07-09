@@ -134,15 +134,12 @@ export default [
                     "args": [
                       {
                         "prim": "pair",
-                        "args": [
-                          { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "string" } ] },
-                          { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ] }
-                        ]
+                        "args": [ { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "string" } ] }, { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "nat" } ] } ]
                       },
                       {
                         "prim": "pair",
                         "args": [
-                          { "prim": "map", "args": [ { "prim": "string" }, { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "address" } ] } ] },
+                          { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ] },
                           { "prim": "pair", "args": [ { "prim": "set", "args": [ { "prim": "bytes" } ] }, { "prim": "set", "args": [ { "prim": "bytes" } ] } ] }
                         ]
                       }
@@ -251,7 +248,10 @@ export default [
                                     },
                                     {
                                       "prim": "pair",
-                                      "args": [ { "prim": "nat", "annots": [ "%tokenId" ] }, { "prim": "string", "annots": [ "%tokenSymbol" ] } ],
+                                      "args": [
+                                        { "prim": "bytes", "annots": [ "%tokenHash" ] },
+                                        { "prim": "pair", "args": [ { "prim": "nat", "annots": [ "%tokenId" ] }, { "prim": "string", "annots": [ "%tokenSymbol" ] } ] }
+                                      ],
                                       "annots": [ "%updateTokenId" ]
                                     }
                                   ]
@@ -294,17 +294,13 @@ export default [
                                   "prim": "pair",
                                   "args": [
                                     { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "string" } ], "annots": [ "%signerAddressAlias" ] },
-                                    { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ], "annots": [ "%tokensIssued" ] }
+                                    { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "nat" } ], "annots": [ "%tokensHash" ] }
                                   ]
                                 },
                                 {
                                   "prim": "pair",
                                   "args": [
-                                    {
-                                      "prim": "map",
-                                      "args": [ { "prim": "string" }, { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "address" } ] } ],
-                                      "annots": [ "%tokerOwner" ]
-                                    },
+                                    { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ], "annots": [ "%tokensIssued" ] },
                                     {
                                       "prim": "pair",
                                       "args": [
@@ -366,7 +362,7 @@ export default [
                                                   { "prim": "pair", "args": [ { "prim": "signature" }, { "prim": "pair", "args": [ { "prim": "key" }, { "prim": "string" } ] } ] }
                                                 ]
                                               },
-                                              { "prim": "pair", "args": [ { "prim": "nat" }, { "prim": "string" } ] }
+                                              { "prim": "pair", "args": [ { "prim": "bytes" }, { "prim": "pair", "args": [ { "prim": "nat" }, { "prim": "string" } ] } ] }
                                             ]
                                           }
                                         ]
@@ -396,13 +392,13 @@ export default [
                                             "prim": "pair",
                                             "args": [
                                               { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "string" } ] },
-                                              { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ] }
+                                              { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "nat" } ] }
                                             ]
                                           },
                                           {
                                             "prim": "pair",
                                             "args": [
-                                              { "prim": "map", "args": [ { "prim": "string" }, { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "address" } ] } ] },
+                                              { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ] },
                                               {
                                                 "prim": "pair",
                                                 "args": [ { "prim": "set", "args": [ { "prim": "bytes" } ] }, { "prim": "set", "args": [ { "prim": "bytes" } ] } ]
@@ -647,7 +643,7 @@ export default [
                                         ],
                                         "annots": [ "%mint" ]
                                       },
-                                      { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "120" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                      { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "121" } ] }, { "prim": "FAILWITH" } ], [] ] },
                                       { "prim": "PUSH", "args": [ { "prim": "mutez" }, { "int": "0" } ] },
                                       { "prim": "DUP", "args": [ { "int": "4" } ] },
                                       { "prim": "GET", "args": [ { "int": "6" } ] },
@@ -681,7 +677,7 @@ export default [
                                       { "prim": "DUP", "args": [ { "int": "7" } ] },
                                       { "prim": "GET", "args": [ { "int": "5" } ] },
                                       { "prim": "GET" },
-                                      { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "87" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                      { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "86" } ] }, { "prim": "FAILWITH" } ], [] ] },
                                       { "prim": "PAIR" },
                                       { "prim": "DIG", "args": [ { "int": "5" } ] },
                                       { "prim": "CAR" },
@@ -776,6 +772,52 @@ export default [
                                                 [ { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "verify hash: Invalid Signature" } ] }, { "prim": "FAILWITH" } ]
                                               ]
                                             },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "GET", "args": [ { "int": "3" } ] },
+                                            { "prim": "CDR" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "CAR" },
+                                            { "prim": "CDR" },
+                                            { "prim": "MEM" },
+                                            {
+                                              "prim": "IF",
+                                              "args": [
+                                                [
+                                                  { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "NFT-asset: cannot update token with existing hash" } ] },
+                                                  { "prim": "FAILWITH" }
+                                                ],
+                                                []
+                                              ]
+                                            },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "UNPAIR" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "UNPAIR" },
+                                            { "prim": "UNPAIR" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DIG", "args": [ { "int": "5" } ] },
+                                            { "prim": "GET", "args": [ { "int": "5" } ] },
+                                            { "prim": "DUP", "args": [ { "int": "6" } ] },
+                                            { "prim": "GET", "args": [ { "int": "6" } ] },
+                                            { "prim": "GET" },
+                                            { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "104" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                            { "prim": "SOME" },
+                                            { "prim": "DUP", "args": [ { "int": "6" } ] },
+                                            { "prim": "CAR" },
+                                            { "prim": "CDR" },
+                                            { "prim": "UPDATE" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "PAIR" },
+                                            { "prim": "PAIR" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "PAIR" },
+                                            { "prim": "SWAP" },
                                             { "prim": "NIL", "args": [ { "prim": "operation" } ] },
                                             { "prim": "DUP", "args": [ { "int": "3" } ] },
                                             { "prim": "CAR" },
@@ -788,15 +830,14 @@ export default [
                                               ],
                                               "annots": [ "%update" ]
                                             },
-                                            { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "107" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                            { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "108" } ] }, { "prim": "FAILWITH" } ], [] ] },
                                             { "prim": "PUSH", "args": [ { "prim": "mutez" }, { "int": "0" } ] },
                                             { "prim": "DUP", "args": [ { "int": "5" } ] },
-                                            { "prim": "GET", "args": [ { "int": "3" } ] },
-                                            { "prim": "CDR" },
+                                            { "prim": "GET", "args": [ { "int": "5" } ] },
                                             { "prim": "DUP", "args": [ { "int": "5" } ] },
                                             { "prim": "GET", "args": [ { "int": "6" } ] },
                                             { "prim": "GET" },
-                                            { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "111" } ] }, { "prim": "FAILWITH" } ], [] ] },
+                                            { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "112" } ] }, { "prim": "FAILWITH" } ], [] ] },
                                             { "prim": "EMPTY_MAP", "args": [ { "prim": "string" }, { "prim": "bytes" } ] },
                                             { "prim": "DUP", "args": [ { "int": "6" } ] },
                                             { "prim": "CAR" },
@@ -842,22 +883,70 @@ export default [
                                               ]
                                             },
                                             { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "GET", "args": [ { "int": "3" } ] },
+                                            { "prim": "CDR" },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "CAR" },
+                                            { "prim": "MEM" },
+                                            {
+                                              "prim": "IF",
+                                              "args": [
+                                                [
+                                                  { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "NFT-asset: cannot mint token with existing hash" } ] },
+                                                  { "prim": "FAILWITH" }
+                                                ],
+                                                []
+                                              ]
+                                            },
+                                            { "prim": "SWAP" },
                                             { "prim": "UNPAIR" },
                                             { "prim": "SWAP" },
                                             { "prim": "UNPAIR" },
                                             { "prim": "UNPAIR" },
                                             { "prim": "SWAP" },
                                             { "prim": "DUP", "args": [ { "int": "5" } ] },
-                                            { "prim": "CAR" },
+                                            { "prim": "GET", "args": [ { "int": "3" } ] },
                                             { "prim": "SOME" },
-                                            { "prim": "DIG", "args": [ { "int": "5" } ] },
-                                            { "prim": "CDR" },
+                                            { "prim": "DUP", "args": [ { "int": "6" } ] },
+                                            { "prim": "CAR" },
                                             { "prim": "UPDATE" },
                                             { "prim": "SWAP" },
                                             { "prim": "PAIR" },
                                             { "prim": "PAIR" },
                                             { "prim": "SWAP" },
                                             { "prim": "PAIR" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "GET", "args": [ { "int": "5" } ] },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "DUG", "args": [ { "int": "2" } ] },
+                                            { "prim": "GET", "args": [ { "int": "4" } ] },
+                                            { "prim": "MEM" },
+                                            {
+                                              "prim": "IF",
+                                              "args": [
+                                                [
+                                                  { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "NFT-asset: cannot mint token with existing hash" } ] },
+                                                  { "prim": "FAILWITH" }
+                                                ],
+                                                []
+                                              ]
+                                            },
+                                            { "prim": "SWAP" },
+                                            { "prim": "DUP" },
+                                            { "prim": "GET", "args": [ { "int": "5" } ] },
+                                            { "prim": "DUP", "args": [ { "int": "3" } ] },
+                                            { "prim": "GET", "args": [ { "int": "3" } ] },
+                                            { "prim": "SOME" },
+                                            { "prim": "DIG", "args": [ { "int": "3" } ] },
+                                            { "prim": "GET", "args": [ { "int": "4" } ] },
+                                            { "prim": "UPDATE" },
+                                            { "prim": "UPDATE", "args": [ { "int": "5" } ] },
                                             { "prim": "NIL", "args": [ { "prim": "operation" } ] }
                                           ]
                                         ]
@@ -899,7 +988,7 @@ export default [
               { "prim": "CAR" },
               { "prim": "CAR" },
               { "prim": "CONTRACT", "args": [ { "prim": "address" } ], "annots": [ "%addAccountToWhitelist" ] },
-              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "208" } ] }, { "prim": "FAILWITH" } ], [] ] },
+              { "prim": "IF_NONE", "args": [ [ { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "214" } ] }, { "prim": "FAILWITH" } ], [] ] },
               { "prim": "PUSH", "args": [ { "prim": "mutez" }, { "int": "0" } ] },
               { "prim": "DIG", "args": [ { "int": "3" } ] },
               { "prim": "CDR" },

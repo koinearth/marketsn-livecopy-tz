@@ -25,10 +25,11 @@ class FA2_config:
                  readable=True,
                  force_layouts=True,
                  support_operator=True,
-                 assume_consecutive_token_ids=False,
-                 add_permissions_descriptor=False,
+                 assume_consecutive_token_ids=True,
+                 store_total_supply=True,
                  lazy_entry_points=False,
-                 lazy_entry_points_multiple=False
+                 allow_self_transfer=False,
+                 use_token_metadata_offchain_view=False
                  ):
 
         if debug_mode:
@@ -38,6 +39,9 @@ class FA2_config:
         # The option `debug_mode` makes the code generation use
         # regular maps instead of big-maps, hence it makes inspection
         # of the state of the contract easier.
+
+        self.use_token_metadata_offchain_view = use_token_metadata_offchain_view
+        # Include offchain view for accessing the token metadata (requires TZIP-016 contract metadata)
 
         self.single_asset = single_asset
         # This makes the contract save some gas and storage by
@@ -76,27 +80,21 @@ class FA2_config:
         # If `true` we don't need a real set of token ids, just to know how
         # many there are.
 
+        self.store_total_supply = store_total_supply
+        # Whether to store the total-supply for each token (next to
+        # the token-metadata).
+
         self.add_mutez_transfer = add_mutez_transfer
         # Add an entry point for the administrator to transfer tez potentially
         # in the contract's balance.
 
-        self.add_permissions_descriptor = add_permissions_descriptor
-        # Add the `permissions_descriptor` entry-point; it is an
-        # optional part of the specification and
-        # costs gas and storage so we keep the option of not adding it.
-        #
-        # Note that if `support_operator` is `False`, the
-        # permissions-descriptor becomes technically required.
-
         self.lazy_entry_points = lazy_entry_points
-        self.lazy_entry_points_multiple = lazy_entry_points_multiple
         #
         # Those are “compilation” options of SmartPy into Michelson.
         #
-        if lazy_entry_points and lazy_entry_points_multiple:
-            raise Exception(
-                "Cannot provide lazy_entry_points and lazy_entry_points_multiple")
 
+        self.allow_self_transfer = allow_self_transfer
+        # Authorize call of `transfer` entry_point from self
         name = "FA2"
         if debug_mode:
             name += "-debug"
@@ -114,12 +112,12 @@ class FA2_config:
             name += "-no_ops"
         if not assume_consecutive_token_ids:
             name += "-no_toknat"
-        if add_permissions_descriptor:
-            name += "-perm_desc"
+        if not store_total_supply:
+            name += "-no_totsup"
         if lazy_entry_points:
             name += "-lep"
-        if lazy_entry_points_multiple:
-            name += "-lepm"
+        if allow_self_transfer:
+            name += "-self_transfer"
         self.name = name
 
 
@@ -142,6 +140,9 @@ class Error_message:
     def not_operator(self): return self.make("NOT_OPERATOR")
     def not_owner(self): return self.make("NOT_OWNER")
     def operators_unsupported(self): return self.make("OPERATORS_UNSUPPORTED")
+    def not_admin(self): return self.make("NOT_ADMIN")
+    def not_admin_or_operator(self): return self.make("NOT_ADMIN_OR_OPERATOR")
+    def paused(self): return self.make("PAUSED")
 
 # The current type for a batched transfer in the specification is as
 # follows:
@@ -311,88 +312,17 @@ class Token_meta_data:
         self.config = config
 
     def get_type(self):
-        t = sp.TRecord(
-            token_id=token_id_type,
-            symbol=sp.TString,
-            name=sp.TString,
-            decimals=sp.TNat,
-            extras=sp.TMap(sp.TString, sp.TString)
-        )
-        if self.config.force_layouts:
-            t = t.layout(("token_id",
-                          ("symbol",
-                           ("name",
-                            ("decimals", "extras")))))
-        return t
+        return sp.TRecord(token_id=sp.TNat, token_info=sp.TMap(sp.TString, sp.TBytes))
 
     def set_type_and_layout(self, expr):
         sp.set_type(expr, self.get_type())
-
-    def request_type(self):
-        return token_id_type
-
-
-class Permissions_descriptor:
-    def __init__(self, config):
-        self.config = config
-
-    def get_type(self):
-        operator_transfer_policy = sp.TVariant(
-            no_transfer=sp.TUnit,
-            owner_transfer=sp.TUnit,
-            owner_or_operator_transfer=sp.TUnit)
-        if self.config.force_layouts:
-            operator_transfer_policy = operator_transfer_policy.layout(
-                ("no_transfer",
-                 ("owner_transfer",
-                  "owner_or_operator_transfer")))
-        owner_transfer_policy = sp.TVariant(
-            owner_no_hook=sp.TUnit,
-            optional_owner_hook=sp.TUnit,
-            required_owner_hook=sp.TUnit)
-        if self.config.force_layouts:
-            owner_transfer_policy = owner_transfer_policy.layout(
-                ("owner_no_hook",
-                 ("optional_owner_hook",
-                  "required_owner_hook")))
-        custom_permission_policy = sp.TRecord(
-            tag=sp.TString,
-            config_api=sp.TOption(sp.TAddress))
-        main = sp.TRecord(
-            operator=operator_transfer_policy,
-            receiver=owner_transfer_policy,
-            sender=owner_transfer_policy,
-            custom=sp.TOption(custom_permission_policy))
-        if self.config.force_layouts:
-            main = main.layout(("operator",
-                                ("receiver",
-                                 ("sender", "custom"))))
-        return main
-
-    def set_type_and_layout(self, expr):
-        sp.set_type(expr, self.get_type())
-
-    def make(self):
-        def uv(s):
-            return sp.variant(s, sp.unit)
-        operator = ("owner_or_operator_transfer"
-                    if self.config.support_operator
-                    else "owner_transfer")
-        v = sp.record(
-            operator=uv(operator),
-            receiver=uv("owner_no_hook"),
-            sender=uv("owner_no_hook"),
-            custom=sp.none
-        )
-        v = sp.set_type_expr(v, self.get_type())
-        return v
 
 # The set of all tokens is represented by a `nat` if we assume that token-ids
 # are consecutive, or by an actual `(set nat)` if not.
 ##
 # - Knowing the set of tokens is useful for throwing accurate error messages.
 # - Previous versions of the specification required this set for functional
-# behavior (operators worked per-token).
+# behavior (operators interface had to deal with “all tokens”).
 
 
 class Token_id_set:
@@ -408,6 +338,7 @@ class Token_id_set:
 
     def add(self, metaset, v):
         if self.config.assume_consecutive_token_ids:
+            #sp.verify(metaset == v, message="Token-IDs should be consecutive")
             metaset.set(sp.max(metaset, v + 1))
         else:
             metaset.add(v)
@@ -417,6 +348,12 @@ class Token_id_set:
             return (v < metaset)
         else:
             return metaset.contains(v)
+
+    def cardinal(self, metaset):
+        if self.config.assume_consecutive_token_ids:
+            return metaset
+        else:
+            return sp.len(metaset)
 
 ##
 # Implementation of the Contract
@@ -437,7 +374,7 @@ def mutez_transfer(contract, params):
 # standard and a few other classes to add other common features.
 ##
 # - We see the use of
-# [`sp.entry_point`](https://www.smartpy.io/reference.html#_entry_points)
+# [`sp.entry_point`](https://www.smartpy.io/dev/reference.html#_entry_points)
 # as a function instead of using annotations in order to allow
 # optional entry points.
 # - The storage field `metadata_string` is a placeholder, the build
@@ -448,7 +385,7 @@ def mutez_transfer(contract, params):
 
 
 class FA2_core(sp.Contract):
-    def __init__(self, config, **extra_storage):
+    def __init__(self, config, metadata, **extra_storage):
         self.config = config
         self.error_message = Error_message(self.config)
         self.operator_set = Operator_set(self.config)
@@ -456,58 +393,51 @@ class FA2_core(sp.Contract):
         self.token_id_set = Token_id_set(self.config)
         self.ledger_key = Ledger_key(self.config)
         self.token_meta_data = Token_meta_data(self.config)
-        self.permissions_descriptor_ = Permissions_descriptor(self.config)
         self.batch_transfer = Batch_transfer(self.config)
         if self.config.add_mutez_transfer:
             self.transfer_mutez = sp.entry_point(mutez_transfer)
-        if self.config.add_permissions_descriptor:
-            def permissions_descriptor(self, params):
-                sp.set_type(params, sp.TContract(
-                    self.permissions_descriptor_.get_type()))
-                v = self.permissions_descriptor_.make()
-                sp.transfer(v, sp.mutez(0), params)
-            self.permissions_descriptor = sp.entry_point(
-                permissions_descriptor)
         if config.lazy_entry_points:
-            self.add_flag("lazy_entry_points")
-        if config.lazy_entry_points_multiple:
-            self.add_flag("lazy_entry_points_multiple")
+            self.add_flag("lazy-entry-points")
+        self.add_flag("initial-cast")
         self.exception_optimization_level = "default-line"
         self.init(
             ledger=self.config.my_map(tvalue=Ledger_value.get_type()),
-            tokens=self.config.my_map(tvalue=self.token_meta_data.get_type()),
+            token_metadata=self.config.my_map(
+                tkey=sp.TNat, tvalue=self.token_meta_data.get_type()),
+            total_supply=self.config.my_map(tkey=sp.TNat, tvalue=sp.TNat),
             operators=self.operator_set.make(),
             all_tokens=self.token_id_set.empty(),
-            metadata_string=sp.unit,
+            metadata=metadata,
             **extra_storage
         )
 
     @sp.entry_point
     def transfer(self, params):
-        sp.verify(~self.is_paused())
+        sp.verify(~self.is_paused(), message=self.error_message.paused())
         sp.set_type(params, self.batch_transfer.get_type())
         sp.for transfer in params:
             current_from = transfer.from_
             sp.for tx in transfer.txs:
-                #sp.verify(tx.amount > 0, message = "TRANSFER_OF_ZERO")
                 if self.config.single_asset:
-                    sp.verify(tx.token_id == 0, "single-asset: token-id <> 0")
+                    sp.verify(tx.token_id == 0,
+                              message="single-asset: token-id <> 0")
+
+                sender_verify = ((self.is_administrator(sp.sender)) |
+                                 (current_from == sp.sender))
+                message = self.error_message.not_owner()
                 if self.config.support_operator:
-                    sp.verify(
-                        (self.is_administrator(sp.sender)) |
-                        (current_from == sp.sender) |
-                        self.operator_set.is_member(self.data.operators,
-                                                    current_from,
-                                                    sp.sender,
-                                                    tx.token_id),
-                        message=self.error_message.not_operator())
-                else:
-                    sp.verify(
-                        (self.is_administrator(sp.sender)) |
-                        (current_from == sp.sender),
-                        message=self.error_message.not_owner())
-                sp.verify(self.data.tokens.contains(tx.token_id),
-                          message=self.error_message.token_undefined())
+                    message = self.error_message.not_operator()
+                    sender_verify |= (self.operator_set.is_member(self.data.operators,
+                                                                  current_from,
+                                                                  sp.sender,
+                                                                  tx.token_id))
+                if self.config.allow_self_transfer:
+                    sender_verify |= (sp.sender == sp.self_address)
+                sp.verify(sender_verify, message=message)
+                sp.verify(
+                    self.data.token_metadata.contains(tx.token_id),
+                    message=self.error_message.token_undefined()
+                )
                 # If amount is 0 we do nothing now:
                 sp.if (tx.amount > 0):
                     from_user = self.ledger_key.make(current_from, tx.token_id)
@@ -528,12 +458,12 @@ class FA2_core(sp.Contract):
     @sp.entry_point
     def balance_of(self, params):
         # paused may mean that balances are meaningless:
-        sp.verify(~self.is_paused())
+        sp.verify(~self.is_paused(), message=self.error_message.paused())
         sp.set_type(params, Balance_of.entry_point_type())
 
         def f_process_request(req):
             user = self.ledger_key.make(req.owner, req.token_id)
-            sp.verify(self.data.tokens.contains(req.token_id),
+            sp.verify(self.data.token_metadata.contains(req.token_id),
                       message=self.error_message.token_undefined())
             sp.if self.data.ledger.contains(user):
                 balance = self.data.ledger[user].balance
@@ -551,35 +481,50 @@ class FA2_core(sp.Contract):
                             token_id=sp.set_type_expr(req.token_id, sp.TNat)),
                         balance=0))
         res = sp.local("responses", params.requests.map(f_process_request))
-        destination = sp.set_type_expr(params.callback,
-                                       sp.TContract(Balance_of.response_type()))
+        destination = sp.set_type_expr(
+            params.callback, sp.TContract(Balance_of.response_type()))
         sp.transfer(res.value, sp.mutez(0), destination)
 
-    @sp.entry_point
-    def token_metadata_registry(self, params):
-        sp.verify(~self.is_paused())
-        sp.set_type(params, sp.TContract(sp.TAddress))
-        sp.transfer(sp.to_address(sp.self), sp.mutez(0), params)
+    @sp.offchain_view(pure=True)
+    def get_balance(self, req):
+        """This is the `get_balance` view defined in TZIP-12."""
+        sp.set_type(
+            req, sp.TRecord(
+                owner=sp.TAddress,
+                token_id=sp.TNat
+            ).layout(("owner", "token_id")))
+        user = self.ledger_key.make(req.owner, req.token_id)
+        sp.verify(self.data.token_metadata.contains(req.token_id),
+                  message=self.error_message.token_undefined())
+        sp.result(self.data.ledger[user].balance)
 
     @sp.entry_point
     def update_operators(self, params):
         sp.set_type(params, sp.TList(
             sp.TVariant(
                 add_operator=self.operator_param.get_type(),
-                remove_operator=self.operator_param.get_type())))
+                remove_operator=self.operator_param.get_type()
+            )
+        ))
         if self.config.support_operator:
             sp.for update in params:
                 with update.match_cases() as arg:
                     with arg.match("add_operator") as upd:
-                        sp.verify((upd.owner == sp.sender) |
-                                  (self.is_administrator(sp.sender)))
+                        sp.verify(
+                            (upd.owner == sp.sender) | self.is_administrator(
+                                sp.sender),
+                            message=self.error_message.not_admin_or_operator()
+                        )
                         self.operator_set.add(self.data.operators,
                                               upd.owner,
                                               upd.operator,
                                               upd.token_id)
                     with arg.match("remove_operator") as upd:
-                        sp.verify((upd.owner == sp.sender) |
-                                  (self.is_administrator(sp.sender)))
+                        sp.verify(
+                            (upd.owner == sp.sender) | self.is_administrator(
+                                sp.sender),
+                            message=self.error_message.not_admin_or_operator()
+                        )
                         self.operator_set.remove(self.data.operators,
                                                  upd.owner,
                                                  upd.operator,
@@ -602,7 +547,8 @@ class FA2_administrator(FA2_core):
 
     @sp.entry_point
     def set_administrator(self, params):
-        sp.verify(self.is_administrator(sp.sender))
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
         self.data.administrator = params
 
 
@@ -612,101 +558,100 @@ class FA2_pause(FA2_core):
 
     @sp.entry_point
     def set_pause(self, params):
-        sp.verify(self.is_administrator(sp.sender))
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
         self.data.paused = params
+
+
+class FA2_change_metadata(FA2_core):
+    @sp.entry_point
+    def set_metadata(self, k, v):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.metadata[k] = v
 
 
 class FA2_mint(FA2_core):
     @sp.entry_point
     def mint(self, params):
-        self.data.tokenCount += 1
 
         _token_id = self.data.tokenCount
-        _amount = params.amount
-        _address = params.address
-        _symbol = params.symbol
-        _oracleContract = params.oracleContract
-        _groupId = params.groupId
-        _to = params.to
-        _hash = params._hash
 
+        #sp.verify(self.is_administrator(sp.sender), message = self.error_message.not_admin())
         sp.verify(self._isWhitelistAdmin(sp.sender))
         # We don't check for pauseness because we're the admin.
         if self.config.single_asset:
-            sp.verify(_token_id == 0, "single-asset: token-id <> 0")
+            sp.verify(_token_id == 0,
+                      message="single-asset: token-id <> 0")
         if self.config.non_fungible:
-            sp.verify(_amount == 1, "NFT-asset: amount <> 1")
-            sp.verify(~ self.token_id_set.contains(self.data.all_tokens,
-                                                   _token_id),
-                      "NFT-asset: cannot mint twice same token")
-        user = self.ledger_key.make(_address, _token_id)
-        sp.if ~self.token_id_set.contains(self.data.all_tokens, _token_id):
-            self.token_id_set.add(self.data.all_tokens, _token_id)
-        sp.if self.data.ledger.contains(user) & ~self.data.tokens.contains(_token_id):
-            sp.if ~self.data.tokens.contains(_token_id):
-                self.data.ledger[user].balance += _amount
+            sp.verify(params.amount == 1, message="NFT-asset: amount <> 1")
+            sp.verify(
+                ~ self.token_id_set.contains(
+                    self.data.all_tokens, _token_id),
+                message="NFT-asset: cannot mint twice same token"
+            )
+        user = self.ledger_key.make(params.address, _token_id)
+        self.token_id_set.add(self.data.all_tokens, _token_id)
+        sp.if self.data.ledger.contains(user):
+            self.data.ledger[user].balance += params.amount
         sp.else:
-            self.data.ledger[user] = Ledger_value.make(_amount)
+            self.data.ledger[user] = Ledger_value.make(params.amount)
+        sp.if self.data.token_metadata.contains(_token_id):
+            pass
+        sp.else:
+            self.data.token_metadata[_token_id] = sp.record(
+                token_id=_token_id,
+                token_info=params.metadata
+            )
+            self.data.total_supply[_token_id] = params.amount
+
+        # sp.verify(~self.data.tokenHash.contains(params._hash),
+        #           message="NFT-asset: cannot mint token with existing hash")
 
         # Inform oracle contract of the tokenId created
-        c = sp.contract(sp.TRecord(tokenId=sp.TNat, tokenSymbol=sp.TString),
-                        address=_oracleContract, entry_point="updateTokenId").open_some()
-        content = sp.record(tokenId=_token_id, tokenSymbol=_symbol)
-        sp.transfer(content, sp.mutez(0), c)
+        sp.if params.oracleContract != self.data.administrator:
+            c = sp.contract(sp.TRecord(tokenId=sp.TNat, tokenSymbol=sp.TString, tokenHash=sp.TBytes),
+                            address=params.oracleContract, entry_point="updateTokenId").open_some()
+            content = sp.record(tokenId=_token_id,
+                                tokenSymbol=params.tokenSymbol,
+                                tokenHash=params._hash)
+            sp.transfer(content, sp.mutez(0), c)
 
-        # Update the tokenData against the tokenId
-        self.data.tokens[_token_id] = sp.record(
-            token_id=_token_id,
-            symbol=_symbol,
-            name="",  # Consered useless here
-            decimals=0,
-            extras=sp.map()
-        )
-        self.data.tokenHash[_hash] = _token_id
+        # self.data.tokenHash[params._hash] = _token_id
+        self.data.tokenCount += 1
 
     @sp.entry_point
     def update(self, params):
-
-        _token_id = params.tokenId
-        _amount = params.amount
-        _address = params.address
-        _symbol = params.symbol
-        _oracleContract = params.oracleContract
-        _groupId = params.groupId
-        _to = params.to
-        _hash = params._hash
         sp.verify(self._isWhitelistAdmin(sp.sender))
-        # We don't check for pauseness because we're the admin.
-        if self.config.single_asset:
-            sp.verify(_token_id == 0, "single-asset: token-id <> 0")
-        if self.config.non_fungible:
-            sp.verify(_amount == 1, "NFT-asset: amount <> 1")
-        user = self.ledger_key.make(_address, _token_id)
-        sp.if ~self.token_id_set.contains(self.data.all_tokens, _token_id):
-            self.token_id_set.add(self.data.all_tokens, _token_id)
-        sp.if self.data.ledger.contains(user) & ~self.data.tokens.contains(_token_id):
-            sp.if ~self.data.tokens.contains(_token_id):
-                self.data.ledger[user].balance += _amount
-        sp.else:
-            self.data.ledger[user] = Ledger_value.make(_amount)
+        self.data.token_metadata[params.token_id] = sp.record(
+            token_id=params.token_id,
+            token_info=params.metadata
+        )
 
 
 class FA2_token_metadata(FA2_core):
-    @sp.entry_point
-    def token_metadata(self, params):
-        sp.verify(~self.is_paused())
-        sp.set_type(params,
-                    sp.TRecord(
-                        token_ids=sp.TList(sp.TNat),
-                        handler=sp.TLambda(
-                            sp.TList(self.token_meta_data.get_type()),
-                            sp.TUnit)
-                    ).layout(("token_ids", "handler")))
+    def set_token_metadata_view(self):
+        def token_metadata(self, tok):
+            """
+            Return the token-metadata URI for the given token.
 
-        def f_on_request(req):
-            self.token_meta_data.set_type_and_layout(self.data.tokens[req])
-            sp.result(self.data.tokens[req])
-        sp.compute(params.handler(params.token_ids.map(f_on_request)))
+            For a reference implementation, dynamic-views seem to be the
+            most flexible choice.
+            """
+            sp.set_type(tok, sp.TNat)
+            sp.result(self.data.token_metadata[tok])
+
+        self.token_metadata = sp.offchain_view(
+            pure=True, doc="Get Token Metadata")(token_metadata)
+
+    def make_metadata(symbol, name, decimals):
+        "Helper function to build metadata JSON bytes values."
+        return (sp.map(l={
+            # Remember that michelson wants map already in ordered
+            "decimals": sp.utils.bytes_of_string("%d" % decimals),
+            "name": sp.utils.bytes_of_string(name),
+            "symbol": sp.utils.bytes_of_string(symbol)
+        }))
 
 
 class FA2_whitelist(FA2_core):
@@ -719,17 +664,101 @@ class FA2_whitelist(FA2_core):
         self.data.whitelist.add(params)
 
 
-class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist, FA2_core):
-    def __init__(self, config, admin, admin_pk, oracleFactoryAddress):
-        FA2_core.__init__(self, config,
-                          paused=False,
-                          administrator=admin,
-                          whitelist=sp.set([admin], t=sp.TAddress),
-                          tokenHash=sp.big_map(tkey=sp.TBytes, tvalue=sp.TNat),
+class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist, FA2_core):
+
+    @sp.offchain_view(pure=True)
+    def count_tokens(self):
+        """Get how many tokens are in this FA2 contract.
+        """
+        sp.result(self.token_id_set.cardinal(self.data.all_tokens))
+
+    @sp.offchain_view(pure=True)
+    def does_token_exist(self, tok):
+        "Ask whether a token ID is exists."
+        sp.set_type(tok, sp.TNat)
+        sp.result(self.data.token_metadata.contains(tok))
+
+    @sp.offchain_view(pure=True)
+    def all_tokens(self):
+        if self.config.assume_consecutive_token_ids:
+            sp.result(sp.range(0, self.data.all_tokens))
+        else:
+            sp.result(self.data.all_tokens.elements())
+
+    @sp.offchain_view(pure=True)
+    def total_supply(self, tok):
+        if self.config.store_total_supply:
+            sp.result(self.data.total_supply[tok])
+        else:
+            sp.set_type(tok, sp.TNat)
+            sp.result("total-supply not supported")
+
+    @sp.offchain_view(pure=True)
+    def is_operator(self, query):
+        sp.set_type(query,
+                    sp.TRecord(token_id=sp.TNat,
+                               owner=sp.TAddress,
+                               operator=sp.TAddress).layout(
+                                   ("owner", ("operator", "token_id"))))
+        sp.result(
+            self.operator_set.is_member(self.data.operators,
+                                        query.owner,
+                                        query.operator,
+                                        query.token_id)
+        )
+
+    def __init__(self, config, metadata, admin, admin_pk, oracleFactoryAddress):
+        # Let's show off some meta-programming:
+        if config.assume_consecutive_token_ids:
+            self.all_tokens.doc = """
+            This view is specified (but optional) in the standard.
+
+            This contract is built with assume_consecutive_token_ids =
+            True, so we return a list constructed from the number of tokens.
+            """
+        else:
+            self.all_tokens.doc = """
+            This view is specified (but optional) in the standard.
+
+            This contract is built with assume_consecutive_token_ids =
+            False, so we convert the set of tokens from the storage to a list
+            to fit the expected type of TZIP-16.
+            """
+        list_of_views = [
+            self.get_balance, self.does_token_exist, self.count_tokens, self.all_tokens, self.is_operator
+        ]
+
+        if config.store_total_supply:
+            list_of_views = list_of_views + [self.total_supply]
+        if config.use_token_metadata_offchain_view:
+            self.set_token_metadata_view()
+            list_of_views = list_of_views + [self.token_metadata]
+
+        metadata_base = {
+            "version": config.name  # will be changed if using fatoo.
+            , "description": (
+                "This is a didactic reference implementation of FA2,"
+                + " a.k.a. TZIP-012, using SmartPy.\n\n"
+                + "This particular contract uses the configuration named: "
+                + config.name + "."
+            ), "interfaces": ["TZIP-012", "TZIP-016"], "authors": [
+                "Seb Mondet <https://seb.mondet.org>"
+            ], "homepage": "https://gitlab.com/smondet/fa2-smartpy", "views": list_of_views, "source": {
+                "tools": ["SmartPy"], "location": "https://gitlab.com/smondet/fa2-smartpy.git"
+            }, "permissions": {
+                "operator":
+                "owner-or-operator-transfer" if config.support_operator else "owner-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook"
+            }, "fa2-smartpy": {
+                "configuration":
+                dict([(k, getattr(config, k))
+                      for k in dir(config) if "__" not in k and k != 'my_map'])
+            }
+        }
+        self.init_metadata("metadata_base", metadata_base)
+        FA2_core.__init__(self, config, metadata, paused=False, administrator=admin, whitelist=sp.set([admin], t=sp.TAddress),
                           adminPublicKey=admin_pk,
                           oracleFactoryAddress=oracleFactoryAddress,
-                          tokenCount=sp.as_nat(0)
-                          )
+                          tokenCount=sp.as_nat(0))
 
 # Tests
 ##
@@ -739,15 +768,19 @@ class FA2(FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitel
 # callback-based entry-points.
 # It stores facts about the results in order to use `scenario.verify(...)`
 # (cf.
-# [documentation](https://www.smartpy.io/reference.html#_in_a_test_scenario_)).
+# [documentation](https://www.smartpy.io/dev/reference.html#_in_a_test_scenario_)).
 
 
 class View_consumer(sp.Contract):
     def __init__(self, contract):
         self.contract = contract
         self.init(last_sum=0,
-                  last_acc="",
                   operator_support=not contract.config.support_operator)
+
+    @sp.entry_point
+    def reinit(self):
+        self.data.last_sum = 0
+        # It's also nice to make this contract have more than one entry point.
 
     @sp.entry_point
     def receive_balances(self, params):
@@ -756,30 +789,11 @@ class View_consumer(sp.Contract):
         sp.for resp in params:
             self.data.last_sum += resp.balance
 
-    @sp.entry_point
-    def receive_metadata_registry(self, params):
-        sp.verify(sp.sender == params)
-
-    @sp.entry_point
-    def receive_metadata(self, params):
-        self.data.last_acc = ""
-        sp.for resp in params:
-            self.contract.token_meta_data.set_type_and_layout(resp)
-            self.data.last_acc += resp.symbol
-
-    @sp.entry_point
-    def receive_permissions_descriptor(self, params):
-        self.contract.permissions_descriptor_.set_type_and_layout(params)
-        sp.if params.operator.is_variant("owner_or_operator_transfer"):
-            self.data.operator_support = True
-        sp.else:
-            self.data.operator_support = False
-
 # Generation of Test Scenarios
 ##
 # Tests are also parametrized by the `FA2_config` object.
 # The best way to visualize them is to use the online IDE
-# (<https://www.smartpy.io/ide/>).
+# (<https://www.smartpy.io/dev/>).
 
 
 def add_test(config, is_default=True):
@@ -795,57 +809,44 @@ def add_test(config, is_default=True):
         # Let's display the accounts:
         scenario.h2("Accounts")
         scenario.show([admin, alice, bob])
-        c1 = FA2(config, admin.address, sp.key("edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2"),
-                 sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
+        c1 = FA2(config=config,
+                 metadata=sp.utils.metadata_of_url("https://example.com"),
+                 admin=admin.address,
+                 admin_pk=admin.public_key,
+                 oracleFactoryAddress=admin.address)
         scenario += c1
         if config.non_fungible:
             # TODO
-            scenario.h2("test add to whitelist")
-            scenario.p(
-                "Adds Alice to the whitelist set with non oracle factory")
-            scenario += c1.addAccountToWhitelist(alice.address).run(
-                sender=sp.address("KT1WRONG"), valid=False)
-            scenario.h2("Add Bob to whitelist")
-            scenario.p(
-                "Admin publickey : edpktzrjdb1tx6dQecQGZL6CwhujWg1D2CXfXWBriqtJSA6kvqMwA2")
-            scenario += c1.addAccountToWhitelist(bob.address).run(
-                sender=sp.address("KT1HjMfN66eJNXa2ZiZmfeeHdwTkb6aZQJLE"))
-            scenario.h2("Mint token for Alice")
-            scenario.p("mint an NFT with tokenData Attached")
-            first_message_packed = sp.pack(
-                sp.record(o="Hello World", n="should work", c=0))
-            testsig = sp.make_signature(secret_key=bob.secret_key,
-                                        message=first_message_packed,
-                                        message_format="Raw")
-            scenario += c1.mint(address=bob.address,
-                                amount=1,
-                                symbol='TK1',
-                                oracleContract=sp.address(
-                                    "KT1ThEdxfUcWUwqsdergy"),
-                                groupId="123456",
-                                to=bob.address,
-                                _hash=sp.bytes("0xABCDEF42")).run(sender=bob.address)
-            scenario.h2("update tokenData of exisiting token")
-            scenario += c1.update(address=bob.address,
-                                  amount=1,
-                                  symbol='TK1',
-                                  tokenId=1,
-                                  oracleContract=sp.address(
-                                      "KT1ThEdxfUcWUwqsdergy"),
-                                  groupId="123456",
-                                  to=bob.address,
-                                  _hash=sp.bytes("0xABCDEF42")).run(sender=bob.address)
-            # scenario += c1.mint(address = bob.address).run(sender = bob.address)
-
             return
+        scenario.h2("Add Alice to whitelist")
+        scenario.p(
+            "Admin publickey : edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX")
+        scenario += c1.addAccountToWhitelist(
+            admin.address).run(sender=admin.address)
         scenario.h2("Initial Minting")
         scenario.p("The administrator mints 100 token-0's to Alice.")
-        scenario += c1.mint(address=alice.address,
-                            amount=100,
-                            symbol='TK0',
-                            token_id=0).run(sender=admin)
+        tok0_md = FA2.make_metadata(
+            name="The Token Zero",
+            decimals=2,
+            symbol="TK0")
+        c1.mint(address=alice.address,
+                amount=100,
+                metadata=tok0_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
+                _hash=sp.bytes("0xABCDEF42")).run(sender=admin)
+        scenario.h2("Update Token")
+        scenario.p("The administrator mints 100 token-0's to Alice.")
+        tok0_md = FA2.make_metadata(
+            name="The Token Zero",
+            decimals=3,
+            symbol="TK0")
+        c1.update(
+            metadata=tok0_md,
+            token_id=0).run(sender=admin)
+        scenario.show(c1.data.ledger)
         scenario.h2("Transfers Alice -> Bob")
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=alice.address,
                                        txs=[
@@ -858,7 +859,7 @@ def add_test(config, is_default=True):
             c1.data.ledger[c1.ledger_key.make(alice.address, 0)].balance == 90)
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(bob.address, 0)].balance == 10)
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=alice.address,
                                        txs=[
@@ -871,24 +872,37 @@ def add_test(config, is_default=True):
                                        ])
             ]).run(sender=alice)
         scenario.verify(
-            c1.data.ledger[c1.ledger_key.make(alice.address, 0)].balance
-            == 90 - 10 - 11)
+            c1.data.ledger[c1.ledger_key.make(
+                alice.address, 0)].balance == 90 - 10 - 11
+        )
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(bob.address, 0)].balance
             == 10 + 10 + 11)
         if config.single_asset:
             return
         scenario.h2("More Token Types")
-        scenario += c1.mint(address=bob.address,
-                            amount=100,
-                            symbol='TK1',
-                            token_id=1).run(sender=admin)
-        scenario += c1.mint(address=bob.address,
-                            amount=200,
-                            symbol='TK2',
-                            token_id=2).run(sender=admin)
+        tok1_md = FA2.make_metadata(
+            name="The Second Token",
+            decimals=0,
+            symbol="TK1")
+        c1.mint(address=bob.address,
+                amount=100,
+                metadata=tok1_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
+                _hash=sp.bytes("0xABCDEF43")).run(sender=admin)
+        tok2_md = FA2.make_metadata(
+            name="The Token Number Three",
+            decimals=0,
+            symbol="TK2")
+        c1.mint(address=bob.address,
+                amount=200,
+                metadata=tok2_md,
+                oracleContract=admin.address,
+                tokenSymbol="",
+                _hash=sp.bytes("0xABCDEF44")).run(sender=admin)
         scenario.h3("Multi-token Transfer Bob -> Alice")
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=bob.address,
                                        txs=[
@@ -907,7 +921,7 @@ def add_test(config, is_default=True):
             ]).run(sender=bob)
         scenario.h2("Other Basic Permission Tests")
         scenario.h3("Bob cannot transfer Alice's tokens.")
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=alice.address,
                                        txs=[
@@ -919,7 +933,7 @@ def add_test(config, is_default=True):
                                                      token_id=0)])
             ]).run(sender=bob, valid=False)
         scenario.h3("Admin can transfer anything.")
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=alice.address,
                                        txs=[
@@ -936,7 +950,7 @@ def add_test(config, is_default=True):
                                                      token_id=0)])
             ]).run(sender=admin)
         scenario.h3("Even Admin cannot transfer too much.")
-        scenario += c1.transfer(
+        c1.transfer(
             [
                 c1.batch_transfer.item(from_=alice.address,
                                        txs=[
@@ -948,66 +962,38 @@ def add_test(config, is_default=True):
         consumer = View_consumer(c1)
         scenario += consumer
         scenario.p("Consumer virtual address: "
-                   + sp.contract_address(consumer).export())
+                   + consumer.address.export())
         scenario.h2("Balance-of.")
 
         def arguments_for_balance_of(receiver, reqs):
             return (sp.record(
                 callback=sp.contract(
                     Balance_of.response_type(),
-                    sp.contract_address(receiver),
+                    receiver.address,
                     entry_point="receive_balances").open_some(),
                 requests=reqs))
-        scenario += c1.balance_of(arguments_for_balance_of(consumer, [
+        c1.balance_of(arguments_for_balance_of(consumer, [
             sp.record(owner=alice.address, token_id=0),
             sp.record(owner=alice.address, token_id=1),
             sp.record(owner=alice.address, token_id=2)
         ]))
         scenario.verify(consumer.data.last_sum == 90)
-        scenario.h2("Token Metadata.")
-        scenario.p("The view-receiver does the verification that the address"
-                   + "received is the one of the FA2 contract.")
-        scenario += c1.token_metadata_registry(
-            sp.contract(
-                sp.TAddress,
-                sp.contract_address(consumer),
-                entry_point="receive_metadata_registry").open_some())
-
-        def check_metadata_list(l):
-            res = sp.local("toks", sp.string(""))
-            sp.for md in l:
-                res.value = sp.concat([md.symbol, res.value])
-                sp.verify((md.symbol == "TK0") | (md.symbol == "TK1"))
-            sp.verify(res.value == "TK1TK0")
-        scenario += c1.token_metadata(
-            sp.record(
-                token_ids=[0, 1],
-                handler=check_metadata_list
-            ))
         scenario.h2("Operators")
         if not c1.config.support_operator:
             scenario.h3("This version was compiled with no operator support")
             scenario.p("Calls should fail even for the administrator:")
-            scenario += c1.update_operators([]).run(sender=admin, valid=False)
-            if config.add_permissions_descriptor:
-                scenario += c1.permissions_descriptor(
-                    sp.contract(
-                        c1.permissions_descriptor_.get_type(),
-                        sp.contract_address(consumer),
-                        entry_point="receive_permissions_descriptor"
-                    ).open_some())
-                scenario.verify(consumer.data.operator_support == False)
+            c1.update_operators([]).run(sender=admin, valid=False)
         else:
             scenario.p("This version was compiled with operator support.")
             scenario.p("Calling 0 updates should work:")
-            scenario += c1.update_operators([]).run()
+            c1.update_operators([]).run()
             scenario.h3("Operator Accounts")
             op0 = sp.test_account("Operator0")
             op1 = sp.test_account("Operator1")
             op2 = sp.test_account("Operator2")
             scenario.show([op0, op1, op2])
             scenario.p("Admin can change Alice's operator.")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("add_operator", c1.operator_param.make(
                     owner=alice.address,
                     operator=op1.address,
@@ -1018,7 +1004,7 @@ def add_test(config, is_default=True):
                     token_id=2))
             ]).run(sender=admin)
             scenario.p("Operator1 can now transfer Alice's tokens 0 and 2")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=alice.address,
                                            txs=[
@@ -1030,7 +1016,7 @@ def add_test(config, is_default=True):
                                                          token_id=2)])
                 ]).run(sender=op1)
             scenario.p("Operator1 cannot transfer Bob's tokens")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=bob.address,
                                            txs=[
@@ -1039,7 +1025,7 @@ def add_test(config, is_default=True):
                                                          token_id=1)])
                 ]).run(sender=op1, valid=False)
             scenario.p("Operator2 cannot transfer Alice's tokens")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=alice.address,
                                            txs=[
@@ -1048,7 +1034,7 @@ def add_test(config, is_default=True):
                                                          token_id=1)])
                 ]).run(sender=op2, valid=False)
             scenario.p("Alice can remove their operator")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("remove_operator", c1.operator_param.make(
                     owner=alice.address,
                     operator=op1.address,
@@ -1059,7 +1045,7 @@ def add_test(config, is_default=True):
                     token_id=0))
             ]).run(sender=alice)
             scenario.p("Operator1 cannot transfer Alice's tokens any more")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=alice.address,
                                            txs=[
@@ -1068,7 +1054,7 @@ def add_test(config, is_default=True):
                                                          token_id=1)])
                 ]).run(sender=op1, valid=False)
             scenario.p("Bob can add Operator0.")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("add_operator", c1.operator_param.make(
                     owner=bob.address,
                     operator=op0.address,
@@ -1079,7 +1065,7 @@ def add_test(config, is_default=True):
                     token_id=1))
             ]).run(sender=bob)
             scenario.p("Operator0 can transfer Bob's tokens '0' and '1'")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=bob.address,
                                            txs=[
@@ -1093,7 +1079,7 @@ def add_test(config, is_default=True):
                                                          token_id=1)])
                 ]).run(sender=op0)
             scenario.p("Bob cannot add Operator0 for Alice's tokens.")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("add_operator", c1.operator_param.make(
                     owner=alice.address,
                     operator=op0.address,
@@ -1101,7 +1087,7 @@ def add_test(config, is_default=True):
                 ))
             ]).run(sender=bob, valid=False)
             scenario.p("Alice can also add Operator0 for their tokens 0.")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("add_operator", c1.operator_param.make(
                     owner=alice.address,
                     operator=op0.address,
@@ -1109,7 +1095,7 @@ def add_test(config, is_default=True):
                 ))
             ]).run(sender=alice, valid=True)
             scenario.p("Operator0 can now transfer Bob's and Alice's 0-tokens.")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=bob.address,
                                            txs=[
@@ -1123,7 +1109,7 @@ def add_test(config, is_default=True):
                                                          token_id=0)])
                 ]).run(sender=op0)
             scenario.p("Bob adds Operator2 as second operator for 0-tokens.")
-            scenario += c1.update_operators([
+            c1.update_operators([
                 sp.variant("add_operator", c1.operator_param.make(
                     owner=bob.address,
                     operator=op2.address,
@@ -1131,7 +1117,7 @@ def add_test(config, is_default=True):
                 ))
             ]).run(sender=bob, valid=True)
             scenario.p("Operator0 and Operator2 can transfer Bob's 0-tokens.")
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=bob.address,
                                            txs=[
@@ -1139,7 +1125,7 @@ def add_test(config, is_default=True):
                                                          amount=1,
                                                          token_id=0)])
                 ]).run(sender=op0)
-            scenario += c1.transfer(
+            c1.transfer(
                 [
                     c1.batch_transfer.item(from_=bob.address,
                                            txs=[
@@ -1147,15 +1133,6 @@ def add_test(config, is_default=True):
                                                          amount=1,
                                                          token_id=0)])
                 ]).run(sender=op2)
-            if config.add_permissions_descriptor:
-                scenario.h3("Testing permissions_descriptor")
-                scenario.verify(consumer.data.operator_support == False)
-                scenario += c1.permissions_descriptor(
-                    sp.contract(
-                        c1.permissions_descriptor_.get_type(),
-                        sp.contract_address(consumer),
-                        entry_point="receive_permissions_descriptor").open_some())
-                scenario.verify(consumer.data.operator_support == True)
             scenario.table_of_contents()
 
 ##
@@ -1182,18 +1159,18 @@ def environment_config():
     return FA2_config(
         debug_mode=global_parameter("debug_mode", False),
         single_asset=global_parameter("single_asset", False),
-        non_fungible=global_parameter("non_fungible", True),
+        non_fungible=global_parameter("non_fungible", False),
         add_mutez_transfer=global_parameter("add_mutez_transfer", False),
         readable=global_parameter("readable", True),
         force_layouts=global_parameter("force_layouts", True),
         support_operator=global_parameter("support_operator", True),
         assume_consecutive_token_ids=global_parameter(
-            "assume_consecutive_token_ids", False),
-        add_permissions_descriptor=global_parameter(
-            "add_permissions_descriptor", False),
+            "assume_consecutive_token_ids", True),
+        store_total_supply=global_parameter("store_total_supply", True),
         lazy_entry_points=global_parameter("lazy_entry_points", False),
-        lazy_entry_points_multiple=global_parameter(
-            "lazy_entry_points_multiple", False),
+        allow_self_transfer=global_parameter("allow_self_transfer", False),
+        use_token_metadata_offchain_view=global_parameter(
+            "use_token_metadata_offchain_view", True),
     )
 
 
@@ -1215,9 +1192,14 @@ if "templates" not in __name__:
                  is_default=not sp.in_browser)
         add_test(FA2_config(assume_consecutive_token_ids=False),
                  is_default=not sp.in_browser)
+        add_test(FA2_config(store_total_supply=False),
+                 is_default=not sp.in_browser)
         add_test(FA2_config(add_mutez_transfer=True),
                  is_default=not sp.in_browser)
         add_test(FA2_config(lazy_entry_points=True),
                  is_default=not sp.in_browser)
-        add_test(FA2_config(lazy_entry_points_multiple=True),
-                 is_default=not sp.in_browser)
+
+    sp.add_compilation_target("FA2_comp", FA2(config=environment_config(),
+                                              metadata=sp.utils.metadata_of_url(
+                                                  "https://example.com"),
+                                              admin=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU"), admin_pk=sp.key("edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX"), oracleFactoryAddress=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU")))

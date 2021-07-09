@@ -68,8 +68,8 @@ const NETWORK_CONFIG = {
       network: "florence",
     },
     contractAddresses: {
-      groupFactoryAddress: "KT1Dov7vZsVU2iCaPp86yiu8ozeJ56FqLmzv",
-      nftAddress: "KT1WNkuKGhEGbRTeRaqvW27EZv23TCwi3EP1",
+      groupFactoryAddress: "KT1NKz1nyHJeLzHaFCFVZ9ydSEBCbS57FRTL",
+      nftAddress: "KT1AfWtoL5LRrR6h3VXmV8KQ1SbJp4uyifm7",
     },
     networkId: "NetXxkAx4woPLyu",
     blockTimeInMs: 30000,

@@ -272,7 +272,6 @@ const updateCert = async function (req, res) {
 const getCert = async function (req, res) {
   try {
     let { TokenId, TokenSymbol, GroupId } = req.query;
-
     if (!TokenId && !TokenSymbol && !GroupId) {
       return sendBadRequestErrMessage(
         res,
@@ -306,7 +305,21 @@ const getCert = async function (req, res) {
 
     // Retrieve details using TokenId
     const livecopyNft = req.app.get("livecopyNft");
-    const tokenDetails = await livecopyNft.getTokenData(TokenId);
+    let tokenDetails = await livecopyNft.getTokenData(TokenId);
+    let previousCID = ""
+    if(tokenDetails["cid"] != "") {
+      let file = await ipfs.files.get(tokenDetails["cid"])
+      let data = JSON.parse(file[0].content.toString())
+      tokenDetails["data"] = data
+      previousCID = data.PreviousCID
+    }
+    tokenDetails["data"]["history"] = []
+    while (previousCID != "" & previousCID != undefined) {
+      let file = await ipfs.files.get(previousCID)
+      let data = JSON.parse(file[0].content.toString())
+      tokenDetails["data"]["history"].push(data)
+      previousCID = data.PreviousCID
+    }
     return res.status(200).send({
       status: "success",
       code: 200,

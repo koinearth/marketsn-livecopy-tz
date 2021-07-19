@@ -267,6 +267,24 @@ const updateCert = async function (req, res) {
   }
 };
 
+const issueOrUpdateCert = async function (req, res) {
+  // Check if Token Already exists
+  const {
+    GroupId,
+    TokenId
+  } = req.body;
+  try {
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
+        GroupId
+      );
+    await livecopyGroup.getTokenId(TokenId);
+    updateCert(req, res);
+  } catch (err) {
+    console.log(err)
+    issueCert(req, res);
+  }
+}
 
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
@@ -334,3 +352,4 @@ const getCert = async function (req, res) {
 exports.issueCert = issueCert;
 exports.updateCert = updateCert;
 exports.getCert = getCert;
+exports.issueOrUpdateCert = issueOrUpdateCert

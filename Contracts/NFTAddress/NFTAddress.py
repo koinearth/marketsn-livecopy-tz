@@ -810,7 +810,8 @@ def add_test(config, is_default=True):
         scenario.h2("Accounts")
         scenario.show([admin, alice, bob])
         c1 = FA2(config=config,
-                 metadata=sp.utils.metadata_of_url("https://example.com"),
+                 metadata=sp.utils.metadata_of_url(
+                     "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
                  admin=admin.address,
                  admin_pk=admin.public_key,
                  oracleFactoryAddress=admin.address)
@@ -1201,5 +1202,5 @@ if "templates" not in __name__:
 
     sp.add_compilation_target("FA2_comp", FA2(config=environment_config(),
                                               metadata=sp.utils.metadata_of_url(
-                                                  "https://example.com"),
+                                                  "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
                                               admin=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU"), admin_pk=sp.key("edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX"), oracleFactoryAddress=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU")))

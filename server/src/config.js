@@ -74,6 +74,21 @@ const NETWORK_CONFIG = {
     networkId: "NetXxkAx4woPLyu",
     blockTimeInMs: 30000,
   },
+  granadanet: {
+    rpc: "https://granadanet.smartpy.io/",
+    noOfConfirmations: 1,
+    conseilServer: {
+      url: "https://conseil-granada.cryptonomic-infra.tech",
+      apiKey: "4d70ca8e-5c05-483a-8baf-3b419d0dd5ed",
+      network: "granada",
+    },
+    contractAddresses: {
+      groupFactoryAddress: "KT1EGH5whbtC3tPJWFak78sSihtjm8apJXcZ",
+      nftAddress: "KT1ARw7C2X2st1R3p58znuzh13WqFrkbbXo6",
+    },
+    networkId: "NetXz969SFaFn8k",
+    blockTimeInMs: 30000,
+  },
 };
 
 // Set the default network to latest testnet, by default

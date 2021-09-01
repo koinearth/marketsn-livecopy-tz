@@ -17,7 +17,12 @@ const { initializeRelayers } = require("./services/relayer");
 const { initializeLiveCopyGroupFactory } = require("./services/livecopy-group");
 const { initializeLiveCopyNft } = require("./services/livecopy-nft");
 
+const pinataSDK = require('@pinata/sdk');
+const pinata = pinataSDK(config.pinataAPIKey, config.pinataAPIPass);
+
 async function initialize() {
+
+  logger.info("initializing connection to " + config.rpc + " ...")
   const rpc = new TezosRPC(
     config.rpc,
     config.networkId,
@@ -44,6 +49,15 @@ async function initialize() {
     config.contractAddresses.nftAddress,
     relayer
   );
+  
+  logger.info("initializing pinning service ...");
+  await pinata.testAuthentication().then((result) => {
+    //handle successful authentication here
+    //console.log(result);
+  }).catch((err) => {
+      //handle error here
+      console.log(err);
+  });
 
   return {
     livecopyGroupFactory,

@@ -121,6 +121,11 @@ const config = {
 
   // Admin emails will receive the nofication on livecopy grp creation requests
   adminEmails: process.env.ADMIN_EMAILS.split(" "),
+
+  pinataAPIKey: process.env.PINATA_API_KEY,
+  pinataAPIPass: process.env.PINATA_API_PASS,
+  IPFS_URL: process.env.IPFS_URL,
+  IPFS_PORT: process.env.IPFS_PORT
 };
 
 module.exports = { config };

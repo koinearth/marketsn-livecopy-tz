@@ -77,7 +77,7 @@ export default {
         },
         {
           "prim": "Pair",
-          "args": [ [], { "prim": "Pair", "args": [ [ { "prim": "Elt", "args": [ { "string": "" }, { "bytes": "68747470733a2f2f6578616d706c652e636f6d" } ] } ], [] ] } ]
+          "args": [ [], { "prim": "Pair", "args": [ [ { "prim": "Elt", "args": [ { "string": "" }, { "bytes": "68747470733a2f2f6769746875622e636f6d2f6b6f696e65617274682f6d61726b6574736e2d6c697665636f70792d747a2f747265652f312e302e31" } ] } ], [] ] } ]
         }
       ]
     },

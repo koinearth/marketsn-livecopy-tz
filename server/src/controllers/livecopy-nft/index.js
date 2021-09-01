@@ -3,21 +3,36 @@
 const { logger } = require("../../logger");
 const { handleError, sendBadRequestErrMessage } = require("../helper");
 const ipfsAPI = require('ipfs-api')
-const ipfs = ipfsAPI({host: 'ipfs.infura.io', port: '5001', protocol: 'https'})
+const pinataSDK = require('@pinata/sdk');
+const { config } = require("../../config");
 
-const adddata = async({content}) => {
-  const file = {content :Buffer.from(content)};
+const pinata = pinataSDK(config.pinataAPIKey, config.pinataAPIPass);
+const ipfs = ipfsAPI({host: config.IPFS_URL, port: config.IPFS_PORT, protocol: 'https'})
+
+const adddata = async({content,id}) => {
+  const file = { content: Buffer.from(content) };
   const dataadded = await ipfs.add(file);
-  return dataadded[0].hash;
-
+  let cid = dataadded[0].hash;
+  const options = {
+    pinataMetadata: {
+      name: id,
+      keyvalues:{}
+    }
+  }
+  await pinata.pinByHash(cid,options).then((result) => {
+    //handle results here
+    //console.log(result);
+  }).catch((err) => {
+      //handle error here
+    console.log(err);
+    return err
+  });
+  return cid
 }
 // Issue an NFT corr. to a group
 const issueCert = async function (req, res) {
   try {
     req.body.Data["PreviousCID"] = "";
-    let content = JSON.stringify(req.body.Data) 
-    let CID =  await adddata({"content":content})
-    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
     const {
       GroupId,
       TokenOwner,
@@ -26,7 +41,10 @@ const issueCert = async function (req, res) {
       SignerPublicKey,
       Signature,
     } = req.body;
-
+    let content = JSON.stringify(req.body.Data) 
+    let CID =  await adddata({"content":content, "id":TokenId})
+    const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
+    
     // GroupId validations
     if (!GroupId) {
       return sendBadRequestErrMessage(
@@ -179,7 +197,7 @@ const updateCert = async function (req, res) {
     let publicData = req.body.Data;
     publicData["PreviousCID"] = previousCID["cid"];
     let content = JSON.stringify(publicData) 
-    let CID =  await adddata({"content":content})
+    let CID =  await adddata({"content":content, "id":TokenId})
     // GroupId validations
     if (!GroupId) {
       return sendBadRequestErrMessage(

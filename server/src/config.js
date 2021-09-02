@@ -3,11 +3,7 @@ dotenv.config();
 
 // Database config
 const DB_CONFIG = {
-  username: process.env.DB_USER_NAME,
-  password: process.env.DB_USER_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  dbName: process.env.DB_NAME,
+  connectionString: process.env.DB_CONN_STRING,
 };
 
 // Network specific config
@@ -15,11 +11,11 @@ const DB_CONFIG = {
 // whenever Tezos deprecates existing testnet
 const NETWORK_CONFIG = {
   mainnet: {
-    rpc: "https://api.tez.ie/rpc/mainnet",
+    rpc: "https://tezos-prod.cryptonomic-infra.tech",
     noOfConfirmations: 1,
     conseilServer: {
       url: "https://conseil-prod.cryptonomic-infra.tech",
-      apiKey: "galleon",
+      apiKey: "42ff7cd4-8992-4f6d-b255-36fa4b9343a4",
       network: "mainnet",
     },
     contractAddresses: {
@@ -60,7 +56,7 @@ const NETWORK_CONFIG = {
     blockTimeInMs: 30000,
   },
   florencenet: {
-    rpc: "https://florencenet.smartpy.io",
+    rpc: "https://tezos-florence.cryptonomic-infra.tech",
     noOfConfirmations: 1,
     conseilServer: {
       url: "https://conseil-florence.cryptonomic-infra.tech",
@@ -75,7 +71,7 @@ const NETWORK_CONFIG = {
     blockTimeInMs: 30000,
   },
   granadanet: {
-    rpc: "https://granadanet.smartpy.io/",
+    rpc: "https://tezos-granada.cryptonomic-infra.tech",
     noOfConfirmations: 1,
     conseilServer: {
       url: "https://conseil-granada.cryptonomic-infra.tech",

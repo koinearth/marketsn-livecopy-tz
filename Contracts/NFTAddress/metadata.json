@@ -1,6 +1,6 @@
 {
   "version": "FA2",
-  "name: : "[markets]N LiveCopy",
+  "name" : "[markets]N LiveCopy",
   "description": "NFT Smart contract of [markets]N LiveCopy, LiveCopy is a Layer3 bridge solution to integrate [markets]N with public Blockchain",
   "interfaces": [ "TZIP-012", "TZIP-016" ],
   "authors": [ "KoineArth" ],

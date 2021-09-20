@@ -189,7 +189,7 @@
       ]
     }
   ],
-  "source": { "tools": [ "SmartPy" ], "location": "https://gitlab.com/smondet/fa2-smartpy.git" },
+  "source": { "tools": [ "SmartPy" ], "location": "https://github.com/koinearth/marketsn-livecopy-tz" },
   "permissions": { "operator": "owner-or-operator-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook" },
   "fa2-smartpy": {
     "configuration": {

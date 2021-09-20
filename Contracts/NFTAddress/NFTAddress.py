@@ -663,6 +663,12 @@ class FA2_whitelist(FA2_core):
         sp.verify(self.data.oracleFactoryAddress == sp.sender)
         self.data.whitelist.add(params)
 
+    @sp.entry_point
+    def updateFactoryAddress(self, oracleFactoryAddress):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.oracleFactoryAddress = oracleFactoryAddress
+
 
 class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist, FA2_core):
 
@@ -744,7 +750,7 @@ class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, 
             ), "interfaces": ["TZIP-012", "TZIP-016"], "authors": [
                 "Seb Mondet <https://seb.mondet.org>"
             ], "homepage": "https://gitlab.com/smondet/fa2-smartpy", "views": list_of_views, "source": {
-                "tools": ["SmartPy"], "location": "https://gitlab.com/smondet/fa2-smartpy.git"
+                "tools": ["SmartPy"], "location": "https://github.com/koinearth/marketsn-livecopy-tz"
             }, "permissions": {
                 "operator":
                 "owner-or-operator-transfer" if config.support_operator else "owner-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook"
@@ -755,6 +761,7 @@ class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, 
             }
         }
         self.init_metadata("metadata_base", metadata_base)
+
         FA2_core.__init__(self, config, metadata, paused=False, administrator=admin, whitelist=sp.set([admin], t=sp.TAddress),
                           adminPublicKey=admin_pk,
                           oracleFactoryAddress=oracleFactoryAddress,
@@ -811,7 +818,7 @@ def add_test(config, is_default=True):
         scenario.show([admin, alice, bob])
         c1 = FA2(config=config,
                  metadata=sp.utils.metadata_of_url(
-                     "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
+                     "https://raw.githubusercontent.com/koinearth/marketsn-livecopy-tz/main/Contracts/NFTAddress/metadata.json"),
                  admin=admin.address,
                  admin_pk=admin.public_key,
                  oracleFactoryAddress=admin.address)
@@ -1202,5 +1209,5 @@ if "templates" not in __name__:
 
     sp.add_compilation_target("FA2_comp", FA2(config=environment_config(),
                                               metadata=sp.utils.metadata_of_url(
-                                                  "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
+                                                  "https://raw.githubusercontent.com/koinearth/marketsn-livecopy-tz/main/Contracts/NFTAddress/metadata.json"),
                                               admin=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU"), admin_pk=sp.key("edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX"), oracleFactoryAddress=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU")))

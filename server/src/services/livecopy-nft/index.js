@@ -29,9 +29,9 @@ class LiveCopyNft {
       throw new ValidationError("TokenId not found");
     }
 
-    let cid = await tokenData.token_info.get("cid")
+    let cid = await tokenData.token_info.get("")
     cid = await TezosMessageUtils.readPackedData(cid,"string")
-    let assetId = await tokenData.token_info.get("assetId")
+    let assetId = await tokenData.token_info.get("name")
     assetId = await TezosMessageUtils.readPackedData(assetId,"string")
     return {
       assetId,

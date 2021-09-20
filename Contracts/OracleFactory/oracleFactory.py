@@ -111,9 +111,9 @@ class LiteOracle(sp.Contract):
                         ).open_some()
         content = sp.record(
             tokenId=self.data.tokensIssued[_tokenSymbol],
-            metadata={"hash": _hash, "assetId": sp.pack(
-                _tokenSymbol), "cid": sp.pack(
-                _cid)},
+            metadata={"hash": _hash, "name": sp.pack(
+                _tokenSymbol), "": sp.pack(
+                _cid), "decimals": sp.pack(0)},
         )
         sp.transfer(content, sp.mutez(0), c)
 
@@ -133,9 +133,9 @@ class LiteOracle(sp.Contract):
             oracleContract=sp.self_address,
             tokenSymbol=_tokenSymbol,
             _hash=_hash,
-            metadata={"hash": _hash, "assetId": sp.pack(
-                _tokenSymbol), "cid": sp.pack(
-                _cid)},
+            metadata={"hash": _hash, "name": sp.pack(
+                _tokenSymbol), "": sp.pack(
+                _cid), "decimals": sp.pack(0)},
         )
         sp.transfer(content, sp.mutez(0), c)
 

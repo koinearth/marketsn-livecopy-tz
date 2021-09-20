@@ -129,7 +129,7 @@ const issueCert = async function (req, res) {
 
     const { transactionHash } = await livecopyGroup.issueCertificate(
       TokenId,
-      CID,
+      "ipfs://" + CID,
       Hash,
       TokenOwner,
       SignerPublicKey,
@@ -267,7 +267,7 @@ const updateCert = async function (req, res) {
     const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
     const { transactionHash } = await livecopyGroup.updateCertificate(
       TokenId,
-      CID,
+      "ipfs://" + CID,
       Hash,
       SignerPublicKey,
       Signature

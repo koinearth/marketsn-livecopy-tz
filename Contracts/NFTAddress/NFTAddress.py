@@ -423,7 +423,7 @@ class FA2_core(sp.Contract):
                               message="single-asset: token-id <> 0")
 
                 sender_verify = ((self.is_administrator(sp.sender)) |
-                                 (current_from == sp.sender))
+                                 (current_from == sp.sender) | (self._isWhitelistAdmin(sp.sender)))
                 message = self.error_message.not_owner()
                 if self.config.support_operator:
                     message = self.error_message.not_operator()
@@ -664,6 +664,18 @@ class FA2_whitelist(FA2_core):
         self.data.whitelist.add(params)
 
     @sp.entry_point
+    def addAccountToWLByAdmin(self, params):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.whitelist.add(params)
+
+    @sp.entry_point
+    def removeAccountFromWLByAdmin(self, params):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.whitelist.remove(params)
+
+    @sp.entry_point
     def updateFactoryAddress(self, oracleFactoryAddress):
         sp.verify(self.is_administrator(sp.sender),
                   message=self.error_message.not_admin())
@@ -813,9 +825,10 @@ def add_test(config, is_default=True):
         admin = sp.test_account("Administrator")
         alice = sp.test_account("Alice")
         bob = sp.test_account("Robert")
+        wladdr = sp.test_account("wladdr")
         # Let's display the accounts:
         scenario.h2("Accounts")
-        scenario.show([admin, alice, bob])
+        scenario.show([admin, alice, bob, wladdr])
         c1 = FA2(config=config,
                  metadata=sp.utils.metadata_of_url(
                      "https://raw.githubusercontent.com/koinearth/marketsn-livecopy-tz/main/Contracts/NFTAddress/metadata.json"),
@@ -831,6 +844,8 @@ def add_test(config, is_default=True):
             "Admin publickey : edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX")
         scenario += c1.addAccountToWhitelist(
             admin.address).run(sender=admin.address)
+        scenario += c1.addAccountToWhitelist(
+            wladdr.address).run(sender=admin.address)
         scenario.h2("Initial Minting")
         scenario.p("The administrator mints 100 token-0's to Alice.")
         tok0_md = FA2.make_metadata(
@@ -853,6 +868,7 @@ def add_test(config, is_default=True):
             metadata=tok0_md,
             token_id=0).run(sender=admin)
         scenario.show(c1.data.ledger)
+        # Remove WhiteList
         scenario.h2("Transfers Alice -> Bob")
         c1.transfer(
             [
@@ -862,7 +878,7 @@ def add_test(config, is_default=True):
                                                      amount=10,
                                                      token_id=0)
                                        ])
-            ]).run(sender=alice)
+            ]).run(sender=wladdr)
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(alice.address, 0)].balance == 90)
         scenario.verify(
@@ -878,7 +894,7 @@ def add_test(config, is_default=True):
                                                      amount=11,
                                                      token_id=0)
                                        ])
-            ]).run(sender=alice)
+            ]).run(sender=wladdr)
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(
                 alice.address, 0)].balance == 90 - 10 - 11

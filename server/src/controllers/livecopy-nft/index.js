@@ -2,49 +2,50 @@
 
 const { logger } = require("../../logger");
 const { handleError, sendBadRequestErrMessage } = require("../helper");
-const ipfsAPI = require('ipfs-api')
-const pinataSDK = require('@pinata/sdk');
+const ipfsAPI = require("ipfs-api");
+const pinataSDK = require("@pinata/sdk");
 const { config } = require("../../config");
 
 const pinata = pinataSDK(config.pinataAPIKey, config.pinataAPIPass);
-const ipfs = ipfsAPI({host: config.IPFS_URL, port: config.IPFS_PORT, protocol: 'https'})
+const ipfs = ipfsAPI({
+  host: config.IPFS_URL,
+  port: config.IPFS_PORT,
+  protocol: "https",
+});
 
-const adddata = async({content,id}) => {
+const adddata = async ({ content, id }) => {
   const file = { content: Buffer.from(content) };
   const dataadded = await ipfs.add(file);
   let cid = dataadded[0].hash;
   const options = {
     pinataMetadata: {
       name: id,
-      keyvalues:{}
-    }
-  }
-  await pinata.pinByHash(cid,options).then((result) => {
-    //handle results here
-    //console.log(result);
-  }).catch((err) => {
+      keyvalues: {},
+    },
+  };
+  await pinata
+    .pinByHash(cid, options)
+    .then((result) => {
+      //handle results here
+      //console.log(result);
+    })
+    .catch((err) => {
       //handle error here
-    console.log(err);
-    return err
-  });
-  return cid
-}
+      console.log(err);
+      return err;
+    });
+  return cid;
+};
 // Issue an NFT corr. to a group
 const issueCert = async function (req, res) {
   try {
     req.body.Data["PreviousCID"] = "";
-    const {
-      GroupId,
-      TokenOwner,
-      TokenId,
-      Hash,
-      SignerPublicKey,
-      Signature,
-    } = req.body;
-    let content = JSON.stringify(req.body.Data) 
-    let CID =  await adddata({"content":content, "id":TokenId})
+    const { GroupId, TokenOwner, TokenId, Hash, SignerPublicKey, Signature } =
+      req.body;
+    let content = JSON.stringify(req.body.Data);
+    let CID = await adddata({ content: content, id: TokenId });
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    
+
     // GroupId validations
     if (!GroupId) {
       return sendBadRequestErrMessage(
@@ -148,7 +149,7 @@ const issueCert = async function (req, res) {
   }
 };
 
-const getCertforIPFS = async function (req,res,TokenSymbol, GroupId) {
+const getCertforIPFS = async function (req, res, TokenSymbol, GroupId) {
   try {
     if (!TokenSymbol) {
       return sendBadRequestErrMessage(
@@ -164,20 +165,17 @@ const getCertforIPFS = async function (req,res,TokenSymbol, GroupId) {
       );
     }
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
-        GroupId
-      );
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
     let TokenId = await livecopyGroup.getTokenId(TokenSymbol);
     // Retrieve details using TokenId
     const livecopyNft = req.app.get("livecopyNft");
     const tokenDetails = await livecopyNft.getTokenData(TokenId);
-    return tokenDetails
+    return tokenDetails;
   } catch (err) {
-      console.log(err)
-      if(err.reason == undefined)
-      {
-        return null;
-      }
+    console.log(err);
+    if (err.reason == undefined) {
+      return null;
+    }
     return handleError(err, res);
   }
 };
@@ -185,19 +183,13 @@ const getCertforIPFS = async function (req,res,TokenSymbol, GroupId) {
 const updateCert = async function (req, res) {
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    const {
-      GroupId,
-      TokenId,
-      Hash,
-      SignerPublicKey,
-      Signature,
-    } = req.body;
+    const { GroupId, TokenId, Hash, SignerPublicKey, Signature } = req.body;
 
     let previousCID = await getCertforIPFS(req, res, TokenId, GroupId);
     let publicData = req.body.Data;
     publicData["PreviousCID"] = previousCID["cid"];
-    let content = JSON.stringify(publicData) 
-    let CID =  await adddata({"content":content, "id":TokenId})
+    let content = JSON.stringify(publicData);
+    let CID = await adddata({ content: content, id: TokenId });
     // GroupId validations
     if (!GroupId) {
       return sendBadRequestErrMessage(
@@ -287,22 +279,17 @@ const updateCert = async function (req, res) {
 
 const issueOrUpdateCert = async function (req, res) {
   // Check if Token Already exists
-  const {
-    GroupId,
-    TokenId
-  } = req.body;
+  const { GroupId, TokenId } = req.body;
   try {
     const livecopyGroupFactory = req.app.get("livecopyGroupFactory");
-    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(
-        GroupId
-      );
+    const livecopyGroup = await livecopyGroupFactory.getGroupInstance(GroupId);
     await livecopyGroup.getTokenId(TokenId);
     updateCert(req, res);
   } catch (err) {
-    console.log(err)
+    console.log(err);
     issueCert(req, res);
   }
-}
+};
 
 // Get details of nft from smart contract
 const getCert = async function (req, res) {
@@ -342,19 +329,20 @@ const getCert = async function (req, res) {
     // Retrieve details using TokenId
     const livecopyNft = req.app.get("livecopyNft");
     let tokenDetails = await livecopyNft.getTokenData(TokenId);
-    let previousCID = ""
-    if(tokenDetails["cid"] != "") {
-      let file = await ipfs.files.get(tokenDetails["cid"])
-      let data = JSON.parse(file[0].content.toString())
-      tokenDetails["data"] = data
-      previousCID = data.PreviousCID
+    console.log(tokenDetails);
+    let previousCID = "";
+    if (tokenDetails["cid"] != "") {
+      let file = await ipfs.files.get(tokenDetails["cid"]);
+      let data = JSON.parse(file[0].content.toString());
+      tokenDetails["data"] = data;
+      previousCID = data.PreviousCID;
     }
-    tokenDetails["data"]["history"] = []
-    while (previousCID != "" & previousCID != undefined) {
-      let file = await ipfs.files.get(previousCID)
-      let data = JSON.parse(file[0].content.toString())
-      tokenDetails["data"]["history"].push(data)
-      previousCID = data.PreviousCID
+    tokenDetails["data"]["history"] = [];
+    while ((previousCID != "") & (previousCID != undefined)) {
+      let file = await ipfs.files.get(previousCID);
+      let data = JSON.parse(file[0].content.toString());
+      tokenDetails["data"]["history"].push(data);
+      previousCID = data.PreviousCID;
     }
     return res.status(200).send({
       status: "success",
@@ -370,4 +358,4 @@ const getCert = async function (req, res) {
 exports.issueCert = issueCert;
 exports.updateCert = updateCert;
 exports.getCert = getCert;
-exports.issueOrUpdateCert = issueOrUpdateCert
+exports.issueOrUpdateCert = issueOrUpdateCert;

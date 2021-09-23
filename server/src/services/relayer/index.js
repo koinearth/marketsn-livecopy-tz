@@ -159,7 +159,11 @@ class Relayer {
   async _prepareOperationBatch(relayer, operationsToSend) {
     const context = new Context(
       this.tezosRpc.rpcURL,
-      new InMemorySigner(relayer.secretKey)
+      new InMemorySigner(relayer.secretKey),
+      undefined,
+      {
+        confirmationPollingIntervalSecond: 5,
+      }
     );
     const wallet = new Wallet(context);
     const batch = wallet.batch([]);

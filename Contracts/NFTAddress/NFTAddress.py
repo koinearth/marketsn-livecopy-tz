@@ -423,7 +423,7 @@ class FA2_core(sp.Contract):
                               message="single-asset: token-id <> 0")
 
                 sender_verify = ((self.is_administrator(sp.sender)) |
-                                 (current_from == sp.sender))
+                                 (current_from == sp.sender) | (self._isWhitelistAdmin(sp.sender)))
                 message = self.error_message.not_owner()
                 if self.config.support_operator:
                     message = self.error_message.not_operator()
@@ -663,6 +663,24 @@ class FA2_whitelist(FA2_core):
         sp.verify(self.data.oracleFactoryAddress == sp.sender)
         self.data.whitelist.add(params)
 
+    @sp.entry_point
+    def addAccountToWLByAdmin(self, params):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.whitelist.add(params)
+
+    @sp.entry_point
+    def removeAccountFromWLByAdmin(self, params):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.whitelist.remove(params)
+
+    @sp.entry_point
+    def updateFactoryAddress(self, oracleFactoryAddress):
+        sp.verify(self.is_administrator(sp.sender),
+                  message=self.error_message.not_admin())
+        self.data.oracleFactoryAddress = oracleFactoryAddress
+
 
 class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, FA2_pause, FA2_whitelist, FA2_core):
 
@@ -744,7 +762,7 @@ class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, 
             ), "interfaces": ["TZIP-012", "TZIP-016"], "authors": [
                 "Seb Mondet <https://seb.mondet.org>"
             ], "homepage": "https://gitlab.com/smondet/fa2-smartpy", "views": list_of_views, "source": {
-                "tools": ["SmartPy"], "location": "https://gitlab.com/smondet/fa2-smartpy.git"
+                "tools": ["SmartPy"], "location": "https://github.com/koinearth/marketsn-livecopy-tz"
             }, "permissions": {
                 "operator":
                 "owner-or-operator-transfer" if config.support_operator else "owner-transfer", "receiver": "owner-no-hook", "sender": "owner-no-hook"
@@ -755,6 +773,7 @@ class FA2(FA2_change_metadata, FA2_token_metadata, FA2_mint, FA2_administrator, 
             }
         }
         self.init_metadata("metadata_base", metadata_base)
+
         FA2_core.__init__(self, config, metadata, paused=False, administrator=admin, whitelist=sp.set([admin], t=sp.TAddress),
                           adminPublicKey=admin_pk,
                           oracleFactoryAddress=oracleFactoryAddress,
@@ -806,12 +825,13 @@ def add_test(config, is_default=True):
         admin = sp.test_account("Administrator")
         alice = sp.test_account("Alice")
         bob = sp.test_account("Robert")
+        wladdr = sp.test_account("wladdr")
         # Let's display the accounts:
         scenario.h2("Accounts")
-        scenario.show([admin, alice, bob])
+        scenario.show([admin, alice, bob, wladdr])
         c1 = FA2(config=config,
                  metadata=sp.utils.metadata_of_url(
-                     "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
+                     "https://raw.githubusercontent.com/koinearth/marketsn-livecopy-tz/main/Contracts/NFTAddress/metadata.json"),
                  admin=admin.address,
                  admin_pk=admin.public_key,
                  oracleFactoryAddress=admin.address)
@@ -824,6 +844,8 @@ def add_test(config, is_default=True):
             "Admin publickey : edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX")
         scenario += c1.addAccountToWhitelist(
             admin.address).run(sender=admin.address)
+        scenario += c1.addAccountToWhitelist(
+            wladdr.address).run(sender=admin.address)
         scenario.h2("Initial Minting")
         scenario.p("The administrator mints 100 token-0's to Alice.")
         tok0_md = FA2.make_metadata(
@@ -846,6 +868,7 @@ def add_test(config, is_default=True):
             metadata=tok0_md,
             token_id=0).run(sender=admin)
         scenario.show(c1.data.ledger)
+        # Remove WhiteList
         scenario.h2("Transfers Alice -> Bob")
         c1.transfer(
             [
@@ -855,7 +878,7 @@ def add_test(config, is_default=True):
                                                      amount=10,
                                                      token_id=0)
                                        ])
-            ]).run(sender=alice)
+            ]).run(sender=wladdr)
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(alice.address, 0)].balance == 90)
         scenario.verify(
@@ -871,7 +894,7 @@ def add_test(config, is_default=True):
                                                      amount=11,
                                                      token_id=0)
                                        ])
-            ]).run(sender=alice)
+            ]).run(sender=wladdr)
         scenario.verify(
             c1.data.ledger[c1.ledger_key.make(
                 alice.address, 0)].balance == 90 - 10 - 11
@@ -1202,5 +1225,5 @@ if "templates" not in __name__:
 
     sp.add_compilation_target("FA2_comp", FA2(config=environment_config(),
                                               metadata=sp.utils.metadata_of_url(
-                                                  "https://github.com/koinearth/marketsn-livecopy-tz/tree/1.0.1"),
+                                                  "https://raw.githubusercontent.com/koinearth/marketsn-livecopy-tz/main/Contracts/NFTAddress/metadata.json"),
                                               admin=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU"), admin_pk=sp.key("edpkuoXgFgg1pGZXTWEGjxvP11YHnNjTaGCbgpFbWBBBCA2awuRSzX"), oracleFactoryAddress=sp.address("tz1a1K9JF61ywdKZG5iVrbYF1jmTFUdhgedU")))

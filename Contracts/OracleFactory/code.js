@@ -52,36 +52,6 @@ export default [
     "prim": "code",
     "args": [
       [
-        {
-          "prim": "CAST",
-          "args": [
-            {
-              "prim": "pair",
-              "args": [
-                {
-                  "prim": "or",
-                  "args": [
-                    {
-                      "prim": "pair",
-                      "args": [
-                        { "prim": "pair", "args": [ { "prim": "signature" }, { "prim": "pair", "args": [ { "prim": "timestamp" }, { "prim": "address" } ] } ] },
-                        { "prim": "pair", "args": [ { "prim": "key" }, { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "int" } ] } ] }
-                      ]
-                    },
-                    { "prim": "address" }
-                  ]
-                },
-                {
-                  "prim": "pair",
-                  "args": [
-                    { "prim": "pair", "args": [ { "prim": "address" }, { "prim": "big_map", "args": [ { "prim": "string" }, { "prim": "address" } ] } ] },
-                    { "prim": "pair", "args": [ { "prim": "address" }, { "prim": "key" } ] }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
         { "prim": "UNPAIR" },
         {
           "prim": "IF_LEFT",
@@ -320,99 +290,6 @@ export default [
                       "prim": "code",
                       "args": [
                         [
-                          {
-                            "prim": "CAST",
-                            "args": [
-                              {
-                                "prim": "pair",
-                                "args": [
-                                  {
-                                    "prim": "or",
-                                    "args": [
-                                      {
-                                        "prim": "or",
-                                        "args": [
-                                          {
-                                            "prim": "pair",
-                                            "args": [
-                                              { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "timestamp" } ] },
-                                              { "prim": "pair", "args": [ { "prim": "address" }, { "prim": "pair", "args": [ { "prim": "signature" }, { "prim": "key" } ] } ] }
-                                            ]
-                                          },
-                                          {
-                                            "prim": "pair",
-                                            "args": [
-                                              { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "pair", "args": [ { "prim": "bytes" }, { "prim": "signature" } ] } ] },
-                                              { "prim": "pair", "args": [ { "prim": "key" }, { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "string" } ] } ] }
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      {
-                                        "prim": "or",
-                                        "args": [
-                                          { "prim": "pair", "args": [ { "prim": "address" }, { "prim": "key" } ] },
-                                          {
-                                            "prim": "or",
-                                            "args": [
-                                              {
-                                                "prim": "pair",
-                                                "args": [
-                                                  { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "bytes" } ] },
-                                                  { "prim": "pair", "args": [ { "prim": "signature" }, { "prim": "pair", "args": [ { "prim": "key" }, { "prim": "string" } ] } ] }
-                                                ]
-                                              },
-                                              { "prim": "pair", "args": [ { "prim": "bytes" }, { "prim": "pair", "args": [ { "prim": "nat" }, { "prim": "string" } ] } ] }
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  },
-                                  {
-                                    "prim": "pair",
-                                    "args": [
-                                      {
-                                        "prim": "pair",
-                                        "args": [
-                                          { "prim": "pair", "args": [ { "prim": "address" }, { "prim": "address" } ] },
-                                          {
-                                            "prim": "pair",
-                                            "args": [
-                                              { "prim": "key" },
-                                              { "prim": "pair", "args": [ { "prim": "string" }, { "prim": "map", "args": [ { "prim": "string" }, { "prim": "address" } ] } ] }
-                                            ]
-                                          }
-                                        ]
-                                      },
-                                      {
-                                        "prim": "pair",
-                                        "args": [
-                                          {
-                                            "prim": "pair",
-                                            "args": [
-                                              { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "string" } ] },
-                                              { "prim": "map", "args": [ { "prim": "bytes" }, { "prim": "nat" } ] }
-                                            ]
-                                          },
-                                          {
-                                            "prim": "pair",
-                                            "args": [
-                                              { "prim": "map", "args": [ { "prim": "string" }, { "prim": "nat" } ] },
-                                              {
-                                                "prim": "pair",
-                                                "args": [ { "prim": "set", "args": [ { "prim": "bytes" } ] }, { "prim": "set", "args": [ { "prim": "bytes" } ] } ]
-                                              }
-                                            ]
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            ]
-                          },
                           { "prim": "UNPAIR" },
                           {
                             "prim": "IF_LEFT",
@@ -660,14 +537,19 @@ export default [
                                       { "prim": "GET", "args": [ { "int": "6" } ] },
                                       { "prim": "PACK" },
                                       { "prim": "SOME" },
-                                      { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "assetId" } ] },
+                                      { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "name" } ] },
                                       { "prim": "UPDATE" },
                                       { "prim": "DUP", "args": [ { "int": "6" } ] },
                                       { "prim": "CAR" },
                                       { "prim": "CAR" },
                                       { "prim": "PACK" },
                                       { "prim": "SOME" },
-                                      { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "cid" } ] },
+                                      { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "" } ] },
+                                      { "prim": "UPDATE" },
+                                      { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "0" } ] },
+                                      { "prim": "PACK" },
+                                      { "prim": "SOME" },
+                                      { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "decimals" } ] },
                                       { "prim": "UPDATE" },
                                       { "prim": "PAIR" },
                                       { "prim": "PUSH", "args": [ { "prim": "nat" }, { "int": "1" } ] },
@@ -849,14 +731,19 @@ export default [
                                             { "prim": "GET", "args": [ { "int": "6" } ] },
                                             { "prim": "PACK" },
                                             { "prim": "SOME" },
-                                            { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "assetId" } ] },
+                                            { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "name" } ] },
                                             { "prim": "UPDATE" },
                                             { "prim": "DIG", "args": [ { "int": "5" } ] },
                                             { "prim": "CAR" },
                                             { "prim": "CAR" },
                                             { "prim": "PACK" },
                                             { "prim": "SOME" },
-                                            { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "cid" } ] },
+                                            { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "" } ] },
+                                            { "prim": "UPDATE" },
+                                            { "prim": "PUSH", "args": [ { "prim": "int" }, { "int": "0" } ] },
+                                            { "prim": "PACK" },
+                                            { "prim": "SOME" },
+                                            { "prim": "PUSH", "args": [ { "prim": "string" }, { "string": "decimals" } ] },
                                             { "prim": "UPDATE" },
                                             { "prim": "PAIR" },
                                             { "prim": "TRANSFER_TOKENS" },
